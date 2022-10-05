@@ -2,7 +2,9 @@
 copied and pasted from my comments in the code 
 if i didn't write this down i would get so confused next year as to what i was doing now
 
-    robot wheels looks like this:
+nice fancy picture i drew explaning it: https://github.com/elee012345/vex-spin-up/blob/main/auton%20testing/explanation.png
+
+robot wheels looks like this:
   /   \
   \   /
 
