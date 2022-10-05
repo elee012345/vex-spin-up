@@ -17,3 +17,4 @@ You get a 45 45 90 triangle, where the legs are each x and the hypotenuse is x r
 That means each of the legs is the distance you want to go divided by root 2, so we have each of the robot motors turn that far instead.
 Then we multiply by 1.1 to overshoot a little bit because our motors have play and are bad and also because the floor has friction.
 
+[![fancy little explanation picture from ms paint](https://raw.githubusercontent.com/elee012345/vex-spin-up/main/auton%20testing/explanation.png)](https://github.com/elee012345/vex-spin-up/blob/main/auton%20testing/explanation.png)
