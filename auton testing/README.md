@@ -5,10 +5,10 @@ if i didn't write this down i would get so confused next year as to what i was d
 nice fancy picture i drew explaning it: https://github.com/elee012345/vex-spin-up/blob/main/auton%20testing/explanation.png
 
 robot wheels looks like this:
-'  
+'''  
   /   \
   \   /
-  '
+'''
 
   they vector outward at 45 degrees each
  however, we want to drive forward a certain amount of inches
