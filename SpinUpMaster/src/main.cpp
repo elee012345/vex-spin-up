@@ -18,6 +18,7 @@
 #include <algorithm>
 #include <cmath>
 #include "camera.h"
+#include "PID.cpp"
 
 using namespace vex;
 
@@ -29,8 +30,8 @@ vex::motor      front_left_motor(vex::PORT1, vex::gearSetting::ratio18_1, false)
 vex::controller con1(vex::controllerType::primary);
 vex::controller con2(vex::controllerType::partner);
 vex::inertial   Inertial2(vex::PORT9);
-vex::motor      shooter_left(vex::PORT20, vex::gearSetting::ratio18_1, true);
-vex::motor      shooter_right(vex::PORT19, vex::gearSetting::ratio18_1, false);
+vex::motor      shooter_left(vex::PORT7, vex::gearSetting::ratio18_1, true);
+vex::motor      shooter_right(vex::PORT8, vex::gearSetting::ratio18_1, false);
 vex::motor      flicker(vex::PORT18, vex::gearSetting::ratio18_1, true);
 vex::gps        gps(vex::PORT17, 0, turnType::right);
 vex::vision     VisionSensor(vex::PORT10);
@@ -77,9 +78,7 @@ class Drives {
       back_left   = back_left   / max_raw_sum * maxSpeed;
       front_right = front_right / max_raw_sum * maxSpeed;
       back_right  = back_right  / max_raw_sum * maxSpeed;
-      con1.Screen.clearScreen();
-      con1.Screen.setCursor(1, 1);
-      con1.Screen.print(front_left);
+      
       //Write the manipulated values out to the motors
       front_left_motor.spin(fwd,front_left, velocityUnits::pct);
       back_left_motor.spin(fwd,back_left,  velocityUnits::pct);
@@ -144,6 +143,9 @@ class Drives {
     }
 };
 
+
+
+
 int main(void) {
     Inertial2.setHeading(0.0, degrees);
     Inertial2.setRotation(0.0, degrees);
@@ -153,17 +155,33 @@ int main(void) {
     }
     Inertial2.setHeading(0.0, degrees);
     Inertial2.setRotation(0.0, degrees);
-    int center = 158;
+    int screenCenter = 158;
+    PID goal(1, 1, 1, 0);
+    int speed;
     while(true) {
       
-      
+      speed = 64.74615 + -0.212685*VisionSensor.largestObject.width;
       
       //Drives::robotOriented();
       
       VisionSensor.takeSnapshot(GOAL_RED);
       if ( con2.ButtonA.pressing() && VisionSensor.largestObject.exists ) {
-        int mid = VisionSensor.largestObject.originX + (VisionSensor.largestObject.width / 2);
-        int turning = (center - mid) * -0.2;
+        
+        // middle of targetted object
+        int targetMid = VisionSensor.largestObject.originX + (VisionSensor.largestObject.width / 2);
+        // other random crap value is 'feedforward' stfu its messed up
+        int error = screenCenter - targetMid + 50;
+        goal.setValues(0.2, 0.005, 0, targetMid);
+        int turning;
+        if ( error < 20 ) {
+          turning = goal.getOutput(error, 0, true, targetMid);
+        } else {
+          goal.resetError();
+          turning = goal.getOutput(error, 0, false, targetMid);
+        }
+        
+
+
         front_left_motor.setVelocity(-turning, velocityUnits::pct);
         front_right_motor.setVelocity(turning, velocityUnits::pct);
         back_left_motor.setVelocity(-turning, velocityUnits::pct);
@@ -172,8 +190,23 @@ int main(void) {
         front_right_motor.spin(directionType::fwd);
         back_left_motor.spin(directionType::fwd);
         back_right_motor.spin(directionType::fwd);
+
+        
       } else {
         Drives::fieldOriented();
+      }
+
+      if (con2.ButtonR2.pressing() ) {
+          
+        shooter_left.setVelocity(speed, velocityUnits::pct);
+        shooter_right.setVelocity(speed, velocityUnits::pct);
+        shooter_left.spin(directionType::fwd);
+        shooter_right.spin(directionType::fwd);
+      } else {
+        shooter_left.setVelocity(0, velocityUnits::pct);
+        shooter_right.setVelocity(0, velocityUnits::pct);
+        shooter_left.spin(directionType::fwd);
+        shooter_right.spin(directionType::fwd);
       }
       
       
@@ -181,7 +214,6 @@ int main(void) {
   }
 
 
-  
   
  
 }
