@@ -18,7 +18,7 @@
 #include <algorithm>
 #include <cmath>
 #include "camera.h"
-#include "PID.cpp"
+#include "PID.h"
 
 using namespace vex;
 
