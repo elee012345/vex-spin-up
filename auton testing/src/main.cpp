@@ -18,13 +18,20 @@
 using namespace vex;
 
 //#region config_globals
-vex::motor      back_right_motor(vex::PORT3, vex::gearSetting::ratio18_1, false);
-vex::motor      back_left_motor(vex::PORT4, vex::gearSetting::ratio18_1, true);
-vex::motor      front_right_motor(vex::PORT2, vex::gearSetting::ratio18_1, false);
-vex::motor      front_left_motor(vex::PORT1, vex::gearSetting::ratio18_1, true);
+vex::motor      back_right_motor(vex::PORT3, vex::gearSetting::ratio18_1, true);
+vex::motor      back_left_motor(vex::PORT4, vex::gearSetting::ratio18_1, false);
+vex::motor      front_right_motor(vex::PORT2, vex::gearSetting::ratio18_1, true);
+vex::motor      front_left_motor(vex::PORT1, vex::gearSetting::ratio18_1, false);
+vex::motor      intake(vex::PORT6, vex::gearSetting::ratio18_1, false);
 vex::controller con1(vex::controllerType::primary);
-vex::gps        GPS(vex::PORT11, 0, turnType::right);
+vex::controller con2(vex::controllerType::partner);
 vex::inertial   Inertial2(vex::PORT9);
+vex::motor      shooter_left(vex::PORT7, vex::gearSetting::ratio18_1, true);
+vex::motor      shooter_right(vex::PORT8, vex::gearSetting::ratio18_1, false);
+vex::gps        gps(vex::PORT17, 0, turnType::right);
+vex::vision     VisionSensor(vex::PORT10);
+
+
 class Auton {
   public:
     void static fieldOrientedAuton(int frontback, int sideways, int turning) {
@@ -147,6 +154,111 @@ class Auton {
       front_right_motor.stop();
       back_right_motor.stop();
     }
+
+  public:
+    // in inches and degrees
+    void static goTo(int xToGo, int yToGo, int secondsToComplete) {
+      double WHEEL_DIAMETER = 4; // inches
+      double CIRCUMFERENCE = 3.14159 * WHEEL_DIAMETER;
+
+      // 84 teeth on wheels and 36 on motors
+      // also 7/3 gear ratio
+      double GEAR_RATIO = 84/36;
+      double x_rotations = (xToGo / CIRCUMFERENCE) * GEAR_RATIO;
+      double y_rotations = (yToGo / CIRCUMFERENCE) * GEAR_RATIO;
+      /*
+      *     robot wheels looks like this:
+      *   /   \
+      *   \   /
+      *
+      *   they vector outward at 45 degrees each
+      *  however, we want to drive forward a certain amount of inches
+      * not driving 45 degrees in a direction
+      * if you extend everything out then you get a square
+      * with a line going from one corner to another that is as far as you want
+      * your robot to drive.
+      * You get a 45 45 90 triangle, where the legs are each x and the hypotenuse is x root 2
+      * that means each of the legs is the distance you want to go divided by root 2
+      * so we have each of the robot motors turn that far instead
+      * 
+      * then we multiply by 1.1 to overshoot a little bit because our motors have play and are bad
+      */
+      double xDegrees = x_rotations * 360 / sqrt(2) * 1.1;
+      double yDegrees = y_rotations * 360  / sqrt(2) * 1.1;
+      
+      front_left_motor.resetRotation();
+      back_left_motor.resetRotation();
+      front_right_motor.resetRotation();
+      back_right_motor.resetRotation();
+
+
+      // different direction where the wheels are pointing so different degrees to turn
+      double front_left_degrees = xDegrees + yDegrees;
+      double front_right_degrees = xDegrees - yDegrees;
+      double back_left_degrees = xDegrees - yDegrees;
+      double back_right_degrees = xDegrees + yDegrees;
+
+      double front_left_degrees_per_second = front_left_degrees/secondsToComplete;
+      double front_right_degrees_per_second = front_right_degrees/secondsToComplete;
+      double back_left_degrees_per_second = back_left_degrees/secondsToComplete;
+      double back_right_degrees_per_second = back_right_degrees/secondsToComplete;
+
+      while ( front_right_motor.rotation(deg) < front_right_degrees || front_left_motor.rotation(deg) < front_left_degrees || back_left_motor.rotation(deg) < back_left_degrees || back_right_motor.rotation(deg) < back_right_degrees ) {
+        // set turning thingy here
+        front_left_motor.spin(fwd, front_left_degrees_per_second, dps);
+        back_left_motor.spin(fwd, back_left_degrees_per_second, dps);
+        front_right_motor.spin(fwd, front_right_degrees_per_second, dps);
+        back_right_motor.spin(fwd, back_right_degrees_per_second, dps);
+        con1.Screen.clearScreen();
+        con1.Screen.setCursor(1, 1);
+        con1.Screen.print(xDegrees);
+        con1.Screen.setCursor(1, 10);
+        con1.Screen.print(front_right_motor.rotation(deg));
+      }
+      front_left_motor.stop();
+      back_left_motor.stop();
+      front_right_motor.stop();
+      back_right_motor.stop();
+    }
+
+  public:
+    // speed in percentage
+    void static turnTo(int degreesToTurn, int speed) {
+      front_left_motor.setBrake(brakeType::brake);
+      front_right_motor.setBrake(brakeType::brake);
+      back_left_motor.setBrake(brakeType::brake);
+      back_right_motor.setBrake(brakeType::brake);
+      
+      front_left_motor.setStopping(brakeType::brake);
+      front_right_motor.setStopping(brakeType::brake);
+      back_left_motor.setStopping(brakeType::brake);
+      back_right_motor.setStopping(brakeType::brake);
+
+      front_left_motor.setVelocity(speed, velocityUnits::pct);
+      back_left_motor.setVelocity(speed, velocityUnits::pct);
+      front_right_motor.setVelocity(-speed, velocityUnits::pct);
+      front_right_motor.setVelocity(-speed, velocityUnits::pct);
+
+      front_left_motor.spin(directionType::fwd);
+      back_left_motor.spin(directionType::fwd);
+      front_right_motor.spin(directionType::fwd);
+      back_right_motor.spin(directionType::fwd);
+      int start_angle = Inertial2.heading();
+      int end_angle = start_angle + degreesToTurn;
+      if ( degreesToTurn < 0 ) {
+        while ( Inertial2.heading() > end_angle ) {
+          
+        }
+      } else  {
+        while ( Inertial2.heading() < end_angle ) {
+          
+        }
+      }
+      front_left_motor.stop();
+      back_left_motor.stop();
+      front_right_motor.stop();
+      front_right_motor.stop();
+    }
 };
 
 
@@ -169,7 +281,7 @@ int main() {
   
 
   //Auton::fieldOrientedAuton(0, 30, 10);
-  Auton::goTo(24, 24, 0, 5);
+  Auton::goTo(24, 24, 5);
 
   
 

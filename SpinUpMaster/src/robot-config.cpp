@@ -8,6 +8,7 @@ using code = vision::code;
 brain  Brain;
 
 // VEXcode device constructors
+digital_out DigitalOutA = digital_out(Brain.ThreeWirePort.A);
 
 // VEXcode generated functions
 
