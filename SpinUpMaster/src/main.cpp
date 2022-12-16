@@ -27,7 +27,8 @@ vex::motor      back_right_motor(vex::PORT3, vex::gearSetting::ratio18_1, true);
 vex::motor      back_left_motor(vex::PORT4, vex::gearSetting::ratio18_1, false);
 vex::motor      front_right_motor(vex::PORT2, vex::gearSetting::ratio18_1, true);
 vex::motor      front_left_motor(vex::PORT1, vex::gearSetting::ratio18_1, false);
-vex::motor      intake(vex::PORT6, vex::gearSetting::ratio18_1, false);
+vex::motor      intakeLeft(vex::PORT6, vex::gearSetting::ratio18_1, false);
+vex::motor      intakeRight(vex::PORT5, vex::gearSetting::ratio18_1, false);
 vex::controller con1(vex::controllerType::primary);
 vex::controller con2(vex::controllerType::partner);
 vex::inertial   Inertial2(vex::PORT9);
@@ -35,6 +36,7 @@ vex::motor      shooter_left(vex::PORT7, vex::gearSetting::ratio18_1, true);
 vex::motor      shooter_right(vex::PORT8, vex::gearSetting::ratio18_1, false);
 vex::gps        gps(vex::PORT17, 0, turnType::right);
 vex::vision     VisionSensor(vex::PORT10);
+vex::motor      expansion(vex::PORT20);
 
 
 
@@ -149,27 +151,33 @@ class Drives {
 
 
 int main(void) {
-    DigitalOutA.set(true);
+    DigitalOutA.set(false);
     Inertial2.setHeading(0.0, degrees);
     Inertial2.setRotation(0.0, degrees);
     Inertial2.startCalibration();
     while (Inertial2.isCalibrating()) { 
         task::sleep(10); 
     }
-    Inertial2.setHeading(180.0, degrees);
-    Inertial2.setRotation(180.0, degrees);
+    Inertial2.setHeading(0.0, degrees);
+    Inertial2.setRotation(0.0, degrees);
     shooter_left.setBrake(coast);
     shooter_right.setBrake(coast);
-    intake.setBrake(coast);
-    intake.setVelocity(50, velocityUnits::pct);
+    intakeLeft.setBrake(coast);
+    intakeRight.setBrake(coast);
+    intakeLeft.setReversed(true);
+    intakeLeft.setVelocity(100, velocityUnits::pct);
+    intakeRight.setVelocity(100, velocityUnits::pct);
+
     int screenCenter = 158;
-    PID goal(1, 1, 1, 0);
-    int speed;
+    PID goal(0.6, 1, 1, 0);
+    PID flywheelSpeed(0.55, 0, 0.4, 0);
+    int speed = 0;
+    int lastSpeed = 0;
     while(true) {
 
       // resetting gyro if anything bad happens
       // intake is considered front, so have to reset while intake is facing away from driver/facing the front
-      if ( con1.ButtonRight.pressing() ) {
+      if ( con1.ButtonY.pressing() ) {
         Inertial2.setHeading(0.0, degrees);
         Inertial2.setRotation(0.0, degrees);
         Inertial2.startCalibration();
@@ -178,25 +186,60 @@ int main(void) {
         }
         Inertial2.setHeading(0.0, degrees);
         Inertial2.setRotation(0.0, degrees);
+      } else if ( con1.ButtonRight.pressing() || con1.ButtonLeft.pressing() || con1.ButtonDown.pressing() || con1.ButtonUp.pressing() ) {
+        // turn to specific angle on second controller for rollers
+        int robotHeading = Inertial2.heading();
+        int turning = 0;
+        if ( con1.ButtonLeft.pressing() ) {
+          if ( (robotHeading - 90) % 360 > (90 - robotHeading) % 360 ) {
+            turning = (90 - robotHeading) % 360;
+          } else {
+            turning = -((robotHeading - 90) % 360);
+          }
+        } else if ( con1.ButtonUp.pressing() ) {
+          if ( (robotHeading - 180) % 360 > (180 - robotHeading) % 360 ) {
+            turning = (180 - robotHeading) % 360;
+          } else {
+            turning = -((robotHeading - 180) % 360);
+          }
+        } else if ( con1.ButtonRight.pressing() ) {
+          if ( (robotHeading - 270) % 360 > (270 - robotHeading) % 360 ) {
+            turning = (270 - robotHeading) % 360;
+          } else {
+            turning = -((robotHeading - 270) % 360);
+          }
+        } else if ( con1.ButtonDown.pressing() ) {
+          if ( (robotHeading - 0) % 360 > (0 - robotHeading) % 360 ) {
+            turning = (0 - robotHeading) % 360;
+          } else {
+            turning = -((robotHeading - 0) % 360);
+          }
+        }
+        front_left_motor.setVelocity(-turning, velocityUnits::pct);
+        front_right_motor.setVelocity(turning, velocityUnits::pct);
+        back_left_motor.setVelocity(-turning, velocityUnits::pct);
+        back_right_motor.setVelocity(turning, velocityUnits::pct);
+        front_left_motor.spin(directionType::fwd);
+        front_right_motor.spin(directionType::fwd);
+        back_left_motor.spin(directionType::fwd);
+        back_right_motor.spin(directionType::fwd);
       } else {
         VisionSensor.takeSnapshot(GOAL_RED);
-        speed = 0.002384*VisionSensor.largestObject.width*VisionSensor.largestObject.width + -0.73373*VisionSensor.largestObject.width + 85;
+        lastSpeed = speed;
+        speed = 0.0028*(VisionSensor.largestObject.width-153.886)*(VisionSensor.largestObject.width-153.886)+28.544;
 
         // CHANGE LATER THIS IS ONLY FOR TESTING REASONS RIGHT NOW JLKASDJF;LKJ ASODIFJ OIKAL JSDFP9IOU ASP9D8OFNUY OH8IU32 RJ98OILA UJHSDIUFK HIAJKSDF
-        //speed = 60;
+        //speed = 70;
 
         //Drives::robotOriented();
         
         // smallest is around 30, largest is around 130
-        con1.Screen.clearScreen();
-        con1.Screen.setCursor(1, 1);
-        con1.Screen.print(screenCenter - (VisionSensor.largestObject.originX + (VisionSensor.largestObject.width / 2)));
-        con1.Screen.setCursor(3, 1);
-        con1.Screen.print(VisionSensor.largestObject.width);
+        
+        
         if ( con1.ButtonL2.pressing() && VisionSensor.largestObject.exists ) {
           
           // middle of targetted object
-          int targetMid = VisionSensor.largestObject.originX + (VisionSensor.largestObject.width / 2) + 35;
+          int targetMid = VisionSensor.largestObject.originX + (VisionSensor.largestObject.width / 2);
           // other random crap value is 'feedforward' stfu its messed up
           int error = screenCenter - targetMid;
           goal.setValues(0.2, 0.003, 0, targetMid);
@@ -228,15 +271,26 @@ int main(void) {
       }
       
       if ( con1.ButtonR1.pressing() ) {
-        DigitalOutA.set(false);
-      } else {
         DigitalOutA.set(true);
+      } else {
+        DigitalOutA.set(false);
       }
 
       if (con1.ButtonR2.pressing() ) {
-          
-        shooter_left.setVelocity(speed, velocityUnits::pct);
-        shooter_right.setVelocity(speed, velocityUnits::pct);
+        double percentSpeed = (shooter_left.velocity(velocityUnits::pct) + shooter_right.velocity(velocityUnits::pct))/2;
+        int runAt = flywheelSpeed.getOutput(percentSpeed, lastSpeed, false, speed) + speed;
+        con1.Screen.clearScreen();
+        con1.Screen.setCursor(1, 1);
+        // what we are actually running at
+        con1.Screen.print(percentSpeed);
+        con1.Screen.setCursor(2, 1);
+        // what we are telling the motors to run at (PID to correct)
+        con1.Screen.print(runAt);
+        con1.Screen.setCursor(3, 1);
+        // what we want to run at
+        con1.Screen.print(speed);
+        shooter_left.setVelocity(runAt, velocityUnits::pct);
+        shooter_right.setVelocity(runAt, velocityUnits::pct);
         shooter_left.spin(directionType::fwd);
         shooter_right.spin(directionType::fwd);
         // if ( con1.ButtonR1.pressing() ) {
@@ -254,11 +308,24 @@ int main(void) {
 
 
       if ( con1.ButtonL1.pressing() ) {
-        intake.spin(directionType::fwd);
+        intakeLeft.spin(directionType::fwd);
+        intakeRight.spin(directionType::fwd);
+      } else if ( con1.ButtonX.pressing() ) {
+        intakeLeft.spin(directionType::rev);
+        intakeRight.spin(directionType::rev);
       } else {
-        intake.stop();
+        intakeLeft.stop();
+        intakeRight.stop();
       }
+
       
+
+
+      if ( con1.ButtonB.pressing() ) {
+        expansion.spin(directionType::fwd);
+      } else {
+        expansion.stop();
+      }
       
       
   }
