@@ -47,16 +47,16 @@ class Drives {
     void static robotOriented() {
       double maxSpeed = 100;
       //Get the raw sums of the X and Y joystick axes
-      double front_left  = (double)(con1.Axis3.position(pct) - con1.Axis4.position(pct));
-      double back_left   = (double)(con1.Axis3.position(pct) + con1.Axis4.position(pct));
-      double front_right = (double)(con1.Axis3.position(pct) + con1.Axis4.position(pct));
-      double back_right  = (double)(con1.Axis3.position(pct) - con1.Axis4.position(pct));
+      double front_left  = (double)(con2.Axis3.position(pct) - (-con2.Axis4.position(pct)));
+      double back_left   = (double)(con2.Axis3.position(pct) + (-con2.Axis4.position(pct)));
+      double front_right = (double)(con2.Axis3.position(pct) + (-con2.Axis4.position(pct)));
+      double back_right  = (double)(con2.Axis3.position(pct) - (-con2.Axis4.position(pct)));
       
       //Find the largest possible sum of X and Y
-      double max_raw_sum = (double)(abs(con1.Axis3.position(pct)) + abs(con1.Axis4.position(pct)));
+      double max_raw_sum = (double)(abs(con2.Axis3.position(pct)) + abs((-con2.Axis4.position(pct))));
       
       //Find the largest joystick value
-      double max_XYstick_value = (double)(std::max(abs(con1.Axis3.position(pct)),abs(con1.Axis4.position(pct))));
+      double max_XYstick_value = (double)(std::max(abs(con2.Axis3.position(pct)),abs((-con2.Axis4.position(pct)))));
       
       //The largest sum will be scaled down to the largest joystick value, and the others will be
       //scaled by the same amount to preserve directionality
@@ -69,10 +69,10 @@ class Drives {
       
       //Now to consider rotation
       //Naively add the rotational axis
-      front_left  = front_left  - con1.Axis1.position(pct);
-      back_left   = back_left   - con1.Axis1.position(pct);
-      front_right = front_right + con1.Axis1.position(pct);
-      back_right  = back_right  + con1.Axis1.position(pct);
+      front_left  = front_left  - con2.Axis1.position(pct);
+      back_left   = back_left   - con2.Axis1.position(pct);
+      front_right = front_right + con2.Axis1.position(pct);
+      back_right  = back_right  + con2.Axis1.position(pct);
       
       //What is the largest sum, or is 100 larger?
       max_raw_sum = std::max(std::abs(front_left),std::max(std::abs(back_left),std::max(std::abs(front_right),std::max(std::abs(back_right),maxSpeed))));
@@ -170,7 +170,7 @@ int main(void) {
 
     int screenCenter = 158;
     PID goal(0.6, 1, 1, 0);
-    PID flywheelSpeed(0.55, 0, 0.4, 0);
+    PID flywheelSpeed(0.4, 0, 0.3, 0);
     int speed = 0;
     int lastSpeed = 0;
     while(true) {
@@ -225,8 +225,8 @@ int main(void) {
         back_right_motor.spin(directionType::fwd);
       } else {
         VisionSensor.takeSnapshot(GOAL_RED);
-        lastSpeed = speed;
-        speed = 0.0028*(VisionSensor.largestObject.width-153.886)*(VisionSensor.largestObject.width-153.886)+28.544;
+        //       lastSpeed = speed;
+        //       speed = 0.0028*(VisionSensor.largestObject.width-153.886)*(VisionSensor.largestObject.width-153.886)+28.544;
 
         // CHANGE LATER THIS IS ONLY FOR TESTING REASONS RIGHT NOW JLKASDJF;LKJ ASODIFJ OIKAL JSDFP9IOU ASP9D8OFNUY OH8IU32 RJ98OILA UJHSDIUFK HIAJKSDF
         //speed = 70;
@@ -235,8 +235,8 @@ int main(void) {
         
         // smallest is around 30, largest is around 130
         
-        
-        if ( con1.ButtonL2.pressing() && VisionSensor.largestObject.exists ) {
+        /// aim at goila
+        if ( (con1.ButtonL2.pressing()|| con2.ButtonL2.pressing()) && VisionSensor.largestObject.exists ) {
           
           // middle of targetted object
           int targetMid = VisionSensor.largestObject.originX + (VisionSensor.largestObject.width / 2);
@@ -265,18 +265,23 @@ int main(void) {
           back_right_motor.spin(directionType::fwd);
 
           
-        } else {
+        } else if ( con1.Axis1.position() != 0  || con1.Axis2.position() != 0  || con1.Axis3.position() != 0  || con1.Axis4.position() != 0 ) {
           Drives::fieldOriented();
+        } else {
+          Drives::robotOriented();
         }
       }
       
-      if ( con1.ButtonR1.pressing() ) {
+      if ( con1.ButtonR1.pressing() || con2.ButtonR1.pressing()) {
         DigitalOutA.set(true);
       } else {
         DigitalOutA.set(false);
       }
 
-      if (con1.ButtonR2.pressing() ) {
+      /// flywheel spionup joko jasjdklfj lsd.
+      if (con1.ButtonR2.pressing() || con1.ButtonR2.pressing()) {
+        lastSpeed = speed;
+        speed = 0.0028*(VisionSensor.largestObject.width-153.886)*(VisionSensor.largestObject.width-153.886)+28.544;
         double percentSpeed = (shooter_left.velocity(velocityUnits::pct) + shooter_right.velocity(velocityUnits::pct))/2;
         int runAt = flywheelSpeed.getOutput(percentSpeed, lastSpeed, false, speed) + speed;
         con1.Screen.clearScreen();
@@ -300,17 +305,44 @@ int main(void) {
         // }
         
       } else {
+        //      lastSpeed = speed;
+        //      speed = 0.0028*(VisionSensor.largestObject.width-153.886)*(VisionSensor.largestObject.width-153.886)+28.544;
+        //      double percentSpeed = (shooter_left.velocity(velocityUnits::pct) + shooter_right.velocity(velocityUnits::pct))/2;
+        //      int runAt = flywheelSpeed.getOutput(percentSpeed, lastSpeed, false, speed) + speed;
+        //      shooter_left.setVelocity(0, velocityUnits::pct);
+        //      shooter_right.setVelocity(0, velocityUnits::pct);
+        //      shooter_left.spin(directionType::fwd);
+        //      shooter_right.spin(directionType::fwd);
+        lastSpeed = speed;
+        speed = 0.0028*(VisionSensor.largestObject.width-153.886)*(VisionSensor.largestObject.width-153.886)+28.544;
+        double percentSpeed = (shooter_left.velocity(velocityUnits::pct) + shooter_right.velocity(velocityUnits::pct))/2;
+        int runAt = flywheelSpeed.getOutput(percentSpeed, lastSpeed, false, speed) + speed;
+        con1.Screen.clearScreen();
+        con1.Screen.setCursor(1, 1);
+        // what we are actually running at
+        con1.Screen.print(percentSpeed);
+        con1.Screen.setCursor(2, 1);
+        // what we are telling the motors to run at (PID to correct)
+        con1.Screen.print(runAt);
+        con1.Screen.setCursor(3, 1);
+        // what we want to run at
+        con1.Screen.print(speed);
         shooter_left.setVelocity(0, velocityUnits::pct);
         shooter_right.setVelocity(0, velocityUnits::pct);
         shooter_left.spin(directionType::fwd);
         shooter_right.spin(directionType::fwd);
+        // if ( con1.ButtonR1.pressing() ) {
+        //   DigitalOutA.set(false);
+        // } else {
+        //   DigitalOutA.set(true);
+        // }
       }
 
 
-      if ( con1.ButtonL1.pressing() ) {
+      if ( con1.ButtonL1.pressing() || con2.ButtonL1.pressing() ) {
         intakeLeft.spin(directionType::fwd);
         intakeRight.spin(directionType::fwd);
-      } else if ( con1.ButtonX.pressing() ) {
+      } else if ( con1.ButtonX.pressing() || con2.ButtonX.pressing() ) {
         intakeLeft.spin(directionType::rev);
         intakeRight.spin(directionType::rev);
       } else {
@@ -321,7 +353,7 @@ int main(void) {
       
 
 
-      if ( con1.ButtonB.pressing() ) {
+      if ( con1.ButtonB.pressing() || con2.ButtonB.pressing()) {
         expansion.spin(directionType::fwd);
       } else {
         expansion.stop();
