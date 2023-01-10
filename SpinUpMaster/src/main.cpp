@@ -37,7 +37,7 @@ vex::motor      shooter_right(vex::PORT8, vex::gearSetting::ratio18_1, false);
 vex::gps        gps(vex::PORT17, 0, turnType::right);
 vex::vision     VisionSensor(vex::PORT10);
 vex::motor      expansion(vex::PORT20);
-
+vex::competition Competition;
 
 
 //#endregion config_globals
@@ -149,17 +149,12 @@ class Drives {
 
 
 
+void auton(void){
+  con1.Screen.print("ur bad");
+}
 
-int main(void) {
-    DigitalOutA.set(false);
-    Inertial2.setHeading(0.0, degrees);
-    Inertial2.setRotation(0.0, degrees);
-    Inertial2.startCalibration();
-    while (Inertial2.isCalibrating()) { 
-        task::sleep(10); 
-    }
-    Inertial2.setHeading(0.0, degrees);
-    Inertial2.setRotation(0.0, degrees);
+
+void driving(void) {  
     shooter_left.setBrake(coast);
     shooter_right.setBrake(coast);
     intakeLeft.setBrake(coast);
@@ -362,10 +357,36 @@ int main(void) {
       
   }
 
-  
-
-
-  
  
 }
 
+void pre_auton(void){
+  con1.Screen.print("ur bad");
+    DigitalOutA.set(false);
+    Inertial2.setHeading(0.0, degrees);
+    Inertial2.setRotation(0.0, degrees);
+    Inertial2.startCalibration();
+    while (Inertial2.isCalibrating()) { 
+        task::sleep(10); 
+    }
+    Inertial2.setHeading(0.0, degrees);
+    Inertial2.setRotation(0.0, degrees);
+}
+
+
+
+int main(){
+  Competition.autonomous(auton);
+  Competition.drivercontrol(driving);
+
+
+  // Run the pre-autonomous function.
+  pre_auton();
+
+
+  // Prevent main from exiting with an infinite loop.
+  while (true) {
+    // Run these independently of auton and driver tasks
+    task::sleep(10); // Wait some time between odometry cycles. Test making it shorter for better position estimates
+  }
+}
