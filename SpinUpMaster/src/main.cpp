@@ -637,9 +637,9 @@ void driving(void) {
         con1.Screen.setCursor(3, 1);
         // what we want to run at
         con1.Screen.print(speed);
-        //runAt
-        shooter_left.setVelocity(100, velocityUnits::pct);
-        shooter_right.setVelocity(100, velocityUnits::pct);
+        
+        shooter_left.setVelocity(runAt, velocityUnits::pct);
+        shooter_right.setVelocity(runAt, velocityUnits::pct);
         shooter_left.spin(directionType::fwd);
         shooter_right.spin(directionType::fwd);
         // if ( con1.ButtonR1.pressing() ) {
