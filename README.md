@@ -10,4 +10,4 @@ field oriented x drive explanation here: https://github.com/elee012345/vex-stuff
 
 i have some fancy auton code that i used because x drives have the wheels vectored in an x lmao and they aren't exactly straight and don't drive the way you expect them to so check out my epic readme in that folder for that
 
-no i do not have two different accounts ethan46290 is the other programmer but with the same name as me
+no i do not have two different accounts ethan46290 is the other programmer who has the same name as me
