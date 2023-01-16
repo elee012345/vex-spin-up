@@ -11,6 +11,7 @@
 // Robot Configuration:
 // [Name]               [Type]        [Port(s)]
 // DigitalOutA          digital_out   A               
+// DigitalOutH          digital_out   H               
 // ---- END VEXCODE CONFIGURED DEVICES ----
 
 // VEX V5 C++ Project
@@ -39,6 +40,7 @@ vex::vision     VisionSensor(vex::PORT10);
 vex::motor      expansion(vex::PORT20);
 vex::competition Competition;
 vex::timer vexTimer;
+
 
 
 //#endregion config_globals
@@ -311,7 +313,7 @@ class AutonCommands {
 
   public:
     // in inches and degrees
-    void static goTo(int xToGo, int yToGo, int secondsToComplete) {
+    void static goTo(double xToGo, double yToGo, double secondsToComplete) {
       double WHEEL_DIAMETER = 4; // inches
       double CIRCUMFERENCE = 3.14159 * WHEEL_DIAMETER;
       vexTimer.clear();
@@ -359,7 +361,7 @@ class AutonCommands {
       double front_right_degrees_per_second = front_right_degrees/secondsToComplete;
       double back_left_degrees_per_second = back_left_degrees/secondsToComplete;
       double back_right_degrees_per_second = back_right_degrees/secondsToComplete;
-      int error = 10;
+      double error = 10;
 
         // set turning thingy here
       while((vexTimer.time(sec) < secondsToComplete + 2)&&(!rangeChecker(front_right_motor.rotation(deg), front_right_degrees, error) || !rangeChecker(front_left_motor.rotation(deg), front_left_degrees, error) || !rangeChecker(back_left_motor.rotation(deg), back_left_degrees, error) || !rangeChecker(back_right_motor.rotation(deg), back_right_degrees, error))){
@@ -449,22 +451,39 @@ class AutonCommands {
 
     public:
       void static doRoller(){
-        double secondsToComplete = 5;
+        double secondsToComplete = 0.5;
         intakeLeft.setBrake(coast);
         intakeRight.setBrake(coast);
         intakeLeft.setReversed(false);
+        intakeRight.setReversed(true);
         intakeLeft.setVelocity(100, velocityUnits::pct);
         intakeRight.setVelocity(100, velocityUnits::pct);
 
         intakeLeft.spin(directionType::fwd);
         intakeRight.spin(directionType::fwd);
 
-        int speed = 5;
 
-        front_left_motor.setVelocity(-speed, velocityUnits::pct);
-        back_left_motor.setVelocity(-speed, velocityUnits::pct);
-        front_right_motor.setVelocity(-speed, velocityUnits::pct);
-        back_right_motor.setVelocity(-speed, velocityUnits::pct);
+        vexTimer.clear();
+        while(vexTimer.time(sec) < secondsToComplete) {
+
+        }
+
+        intakeLeft.stop();
+        intakeRight.stop();
+
+      }
+    
+    public:
+      void static upALittle(bool rev, int speed, double secondsToComplete){
+        int neg = 1;
+        if(rev) {
+          neg *= -1;
+        }
+
+        front_left_motor.setVelocity(speed * neg, velocityUnits::pct);
+        back_left_motor.setVelocity(speed * neg, velocityUnits::pct);
+        front_right_motor.setVelocity(speed * neg, velocityUnits::pct);
+        back_right_motor.setVelocity(speed * neg, velocityUnits::pct);
 
         front_left_motor.spin(directionType::fwd);
         back_left_motor.spin(directionType::fwd);
@@ -480,18 +499,104 @@ class AutonCommands {
         back_left_motor.stop();
         front_right_motor.stop();
         back_right_motor.stop();
+      }
+
+  public:
+    void static toDaLeft(){
+        double secondsToComplete = 0.425;
+        int speed = 100;
+
+        front_left_motor.setVelocity(-speed, velocityUnits::pct);
+        back_left_motor.setVelocity(-speed, velocityUnits::pct);
+        front_right_motor.setVelocity(speed, velocityUnits::pct);
+        back_right_motor.setVelocity(speed, velocityUnits::pct);
+
+        front_left_motor.spin(directionType::fwd);
+        back_left_motor.spin(directionType::fwd);
+        front_right_motor.spin(directionType::fwd);
+        back_right_motor.spin(directionType::fwd);
+
+        vexTimer.clear();
+        while(vexTimer.time(sec) < secondsToComplete) {
+
+        }
+
+        front_left_motor.stop();
+        back_left_motor.stop();
+        front_right_motor.stop();
+        back_right_motor.stop();
+    }
+
+    public:
+      void static leftyRighty(bool lorR, int speed, double secondsToComplete){
+        int neg = 1;
+        if(lorR) {
+          neg *= -1;
+        }
+
+        front_left_motor.setVelocity(-speed * neg, velocityUnits::pct);
+        back_left_motor.setVelocity(speed * neg, velocityUnits::pct);
+        front_right_motor.setVelocity(speed * neg, velocityUnits::pct);
+        back_right_motor.setVelocity(-speed * neg, velocityUnits::pct);
+
+        front_left_motor.spin(directionType::fwd);
+        back_left_motor.spin(directionType::fwd);
+        front_right_motor.spin(directionType::fwd);
+        back_right_motor.spin(directionType::fwd);
+
+        vexTimer.clear();
+        while(vexTimer.time(sec) < secondsToComplete) {
+
+        }
+
+        front_left_motor.stop();
+        back_left_motor.stop();
+        front_right_motor.stop();
+        back_right_motor.stop();
+      }
+    
+    public:
+      void static spinIntake(){
+        intakeLeft.setBrake(coast);
+        intakeRight.setBrake(coast);
+        intakeLeft.setReversed(true);
+        intakeRight.setReversed(false);
+        intakeLeft.setVelocity(100, velocityUnits::pct);
+        intakeRight.setVelocity(100, velocityUnits::pct);
+
+        intakeLeft.spin(directionType::fwd);
+        intakeRight.spin(directionType::fwd);
 
       }
 
-    
+    public:
+      void static stopIntake(){
+
+        intakeLeft.stop();
+        intakeRight.stop();
+
+      }
 };
 
 void auton(void){
   // add edits here 
   // hkjasdfiuashdfiuakjshdfnjaksjdfnijkasjdfniujashdfiuajd
   // jio klaksjdfikljas dfikasj dfkl asjdfk jslafd
-  AutonCommands::goTo(-2,0,2);
+  AutonCommands::goTo(-2,0,0.25);
   AutonCommands::doRoller();
+  AutonCommands::upALittle(false, 100, .25);
+  AutonCommands::toDaLeft();
+  AutonCommands::spinIntake();
+  AutonCommands::upALittle(true, 25, 3);
+  AutonCommands::upALittle(false, 100, .2);
+  AutonCommands::leftyRighty(false, 100, .625);
+  AutonCommands::stopIntake();
+  AutonCommands::upALittle(true, 100, 1.25);
+  AutonCommands::doRoller();
+
+
+
+
   
 }
 
@@ -616,6 +721,12 @@ void driving(void) {
         DigitalOutA.set(false);
       }
 
+      if ( con1.ButtonA.pressing() || con2.ButtonA.pressing()){
+        DigitalOutH.set(true);
+      } else {
+        DigitalOutH.set(false);
+      }
+
       /// flywheel spionup joko jasjdklfj lsd.
       if (con1.ButtonR2.pressing() || con1.ButtonR2.pressing()) {
         lastSpeed = speed;
@@ -712,6 +823,7 @@ void driving(void) {
 void pre_auton(void){
   con1.Screen.print("ur bad");
     DigitalOutA.set(false);
+    DigitalOutH.set(false);
     Inertial2.setHeading(0.0, degrees);
     Inertial2.setRotation(0.0, degrees);
     Inertial2.startCalibration();

@@ -9,6 +9,7 @@ brain  Brain;
 
 // VEXcode device constructors
 digital_out DigitalOutA = digital_out(Brain.ThreeWirePort.A);
+digital_out DigitalOutH = digital_out(Brain.ThreeWirePort.H);
 
 // VEXcode generated functions
 
