@@ -474,16 +474,13 @@ class AutonCommands {
       }
     
     public:
-      void static upALittle(bool rev, int speed, double secondsToComplete){
-        int neg = 1;
-        if(rev) {
-          neg *= -1;
-        }
+      void static upALittle( int speed, double secondsToComplete){
 
-        front_left_motor.setVelocity(speed * neg, velocityUnits::pct);
-        back_left_motor.setVelocity(speed * neg, velocityUnits::pct);
-        front_right_motor.setVelocity(speed * neg, velocityUnits::pct);
-        back_right_motor.setVelocity(speed * neg, velocityUnits::pct);
+
+        front_left_motor.setVelocity(speed, velocityUnits::pct);
+        back_left_motor.setVelocity(speed , velocityUnits::pct);
+        front_right_motor.setVelocity(speed , velocityUnits::pct);
+        back_right_motor.setVelocity(speed , velocityUnits::pct);
 
         front_left_motor.spin(directionType::fwd);
         back_left_motor.spin(directionType::fwd);
@@ -502,10 +499,12 @@ class AutonCommands {
       }
 
   public:
-    void static toDaLeft(){
-        double secondsToComplete = 0.425;
+    void static turning(bool rev,double secondsToComplete){
+        
         int speed = 100;
-
+        if(rev){
+          speed *= -1;
+        }
         front_left_motor.setVelocity(-speed, velocityUnits::pct);
         back_left_motor.setVelocity(-speed, velocityUnits::pct);
         front_right_motor.setVelocity(speed, velocityUnits::pct);
@@ -528,16 +527,11 @@ class AutonCommands {
     }
 
     public:
-      void static leftyRighty(bool lorR, int speed, double secondsToComplete){
-        int neg = 1;
-        if(lorR) {
-          neg *= -1;
-        }
-
-        front_left_motor.setVelocity(-speed * neg, velocityUnits::pct);
-        back_left_motor.setVelocity(speed * neg, velocityUnits::pct);
-        front_right_motor.setVelocity(speed * neg, velocityUnits::pct);
-        back_right_motor.setVelocity(-speed * neg, velocityUnits::pct);
+      void static leftyRighty(int speed, double secondsToComplete){
+        front_left_motor.setVelocity(-speed, velocityUnits::pct);
+        back_left_motor.setVelocity(speed, velocityUnits::pct);
+        front_right_motor.setVelocity(speed, velocityUnits::pct);
+        back_right_motor.setVelocity(-speed, velocityUnits::pct);
 
         front_left_motor.spin(directionType::fwd);
         back_left_motor.spin(directionType::fwd);
@@ -576,7 +570,103 @@ class AutonCommands {
         intakeRight.stop();
 
       }
+
+  public:
+    void static aimAndShoot(){
+      PID goal(0.6, 1, 1, 0);
+      int screenCenter = 158;
+      VisionSensor.takeSnapshot(GOAL_RED);
+        //       lastSpeed = speed;
+        //       speed = 0.0028*(VisionSensor.largestObject.width-153.886)*(VisionSensor.largestObject.width-153.886)+28.544;
+
+        // CHANGE LATER THIS IS ONLY FOR TESTING REASONS RIGHT NOW JLKASDJF;LKJ ASODIFJ OIKAL JSDFP9IOU ASP9D8OFNUY OH8IU32 RJ98OILA UJHSDIUFK HIAJKSDF
+        //speed = 70;
+
+        //Drives::robotOriented();
+        
+        // smallest is around 30, largest is around 130       
+        /// aim at goila
+        // middle of targetted object
+        
+        while(true){
+        int targetMid = VisionSensor.largestObject.originX + (VisionSensor.largestObject.width / 2);
+        // other random crap value is 'feedforward' stfu its messed up
+        int error = screenCenter - targetMid;
+        goal.setValues(0.2, 0.003, 0, targetMid);
+        int turning;
+        
+
+        if ( error < 20 ) {
+          turning = goal.getOutput(screenCenter, 0, true, targetMid);
+        } else {
+          goal.resetError();
+          turning = goal.getOutput(screenCenter, 0, false, targetMid);
+        }
+        
+
+
+        front_left_motor.setVelocity(-turning, velocityUnits::pct);
+        front_right_motor.setVelocity(turning, velocityUnits::pct);
+        back_left_motor.setVelocity(-turning, velocityUnits::pct);
+        back_right_motor.setVelocity(turning, velocityUnits::pct);
+        front_left_motor.spin(directionType::fwd);
+        front_right_motor.spin(directionType::fwd);
+        back_left_motor.spin(directionType::fwd);
+        back_right_motor.spin(directionType::fwd);
+
+        if(error < 5){
+          front_left_motor.stop();
+          back_left_motor.stop();
+         front_right_motor.stop();
+         back_right_motor.stop();
+         break;
+        }
+
+        
+      }
+
+      for(int i = 0; i < 3; i++){
+          AutonCommands::shoot(75);
+        }
+
+    }
+
+  public:
+    static void shoot(int runAt){
+        shooter_left.setVelocity(runAt, velocityUnits::pct);
+        shooter_right.setVelocity(runAt, velocityUnits::pct);
+        shooter_left.spin(directionType::fwd);
+        shooter_right.spin(directionType::fwd);
+
+        vexTimer.clear();
+        while(vexTimer.time(sec) < 1) {
+
+        }
+
+
+        DigitalOutA.set(true);
+        vexTimer.clear();
+        while(vexTimer.time(sec) < 1) {
+
+        }
+        DigitalOutA.set(false);
+    }
+    
+
+  public:
+    static void expand(){
+      expansion.spin(directionType::fwd);
+      DigitalOutH.set(true);
+
+      vexTimer.clear();
+        while(vexTimer.time(sec) < 5) {
+          
+        }
+      expansion.stop();
+      DigitalOutH.set(false);
+    }
 };
+
 
 void auton(void){
   // add edits here 
@@ -584,15 +674,21 @@ void auton(void){
   // jio klaksjdfikljas dfikasj dfkl asjdfk jslafd
   AutonCommands::goTo(-2,0,0.25);
   AutonCommands::doRoller();
-  AutonCommands::upALittle(false, 100, .25);
-  AutonCommands::toDaLeft();
+  AutonCommands::upALittle( 100, .25);
+  AutonCommands::turning(false, 0.425);
   AutonCommands::spinIntake();
-  AutonCommands::upALittle(true, 25, 3);
-  AutonCommands::upALittle(false, 100, .2);
-  AutonCommands::leftyRighty(false, 100, .625);
+  AutonCommands::upALittle( -25, 3);
+  AutonCommands::upALittle( 100, .2);
+  AutonCommands::leftyRighty(100, .625);
   AutonCommands::stopIntake();
-  AutonCommands::upALittle(true, 100, 1.25);
+  AutonCommands::upALittle(-100, 1.25);
   AutonCommands::doRoller();
+  AutonCommands::upALittle(100, 0.25);
+  AutonCommands::aimAndShoot();
+  AutonCommands::upALittle(50, .25);
+  AutonCommands::turning(true, 0.25);
+
+  //AutonCommands::expand();
 
 
 
