@@ -135,7 +135,7 @@ class Drives {
       double rotatedXPos = xPos * cosHeading - yPos * sineHeading;
 
       if ( con1.ButtonDown.pressing() ) {
-        rotatedYPos = -10;
+        rotatedYPos = -7.5;
       }
       
       //Get the raw sums of the X and Y joystick axes
@@ -161,11 +161,17 @@ class Drives {
       }
       
       double turning = con1.Axis1.position(pct);
+      double magicNumber;
+      if ( abs((int)turning) < 93 ) {
+        magicNumber = 1.025;
+      } else {
+        magicNumber = 1.048;
+      }
       if ( turning < 0 ) {
-        turning = pow(1.048, -turning)-1;
+        turning = pow(magicNumber, -turning)-1;
         turning *= -1;
       } else {
-        turning = pow(1.048, turning)-1;
+        turning = pow(magicNumber, turning)-1;
       }
       
 
@@ -186,10 +192,10 @@ class Drives {
       back_right  = back_right  / max_raw_sum * maxSpeed;
       
       //Write the manipulated values out to the motors
-      front_left_motor.spin(fwd,(int)front_left, voltageUnits::volt);
-      back_left_motor.spin(fwd,(int)back_left,  voltageUnits::volt);
-      front_right_motor.spin(fwd,(int)front_right, voltageUnits::volt);
-      back_right_motor.spin(fwd,(int)back_right, voltageUnits::volt);
+      front_left_motor.spin(fwd,front_left, voltageUnits::volt);
+      back_left_motor.spin(fwd,back_left,  voltageUnits::volt);
+      front_right_motor.spin(fwd,front_right, voltageUnits::volt);
+      back_right_motor.spin(fwd,back_right, voltageUnits::volt);
     }
 };
 
@@ -936,11 +942,6 @@ void driving(void) {
         shooter_right.setVelocity(0, velocityUnits::pct);
         shooter_left.spin(directionType::fwd);
         shooter_right.spin(directionType::fwd);
-        // if ( con1.ButtonR1.pressing() ) {
-        //   DigitalOutA.set(false);
-        // } else {
-        //   DigitalOutA.set(true);
-        // }
       }
 
 
@@ -949,6 +950,7 @@ void driving(void) {
         intakeRight.spin(directionType::fwd);
       } else if ( con1.ButtonX.pressing() ) {
         intakeLeft.spin(directionType::rev);
+      } else if ( con2.ButtonX.pressing() ) {
         intakeRight.spin(directionType::rev);
       } else {
         intakeLeft.stop();
