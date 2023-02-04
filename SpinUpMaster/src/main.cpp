@@ -573,22 +573,22 @@ class AutonCommands {
 
   public:
     void static aimAndShoot(){
-      PID goal(0.6, 1, 1, 0);
+      AutonCommands::aim();
+
+      AutonCommands::shoot(2);
+      AutonCommands::shoot(1);
+      AutonCommands::shoot(1);
+
+    }
+
+  public:
+    void static aim(){
+      VisionSensor.takeSnapshot(GOAL_RED);          
       int screenCenter = 158;
-      VisionSensor.takeSnapshot(GOAL_RED);
-        //       lastSpeed = speed;
-        //       speed = 0.0028*(VisionSensor.largestObject.width-153.886)*(VisionSensor.largestObject.width-153.886)+28.544;
-
-        // CHANGE LATER THIS IS ONLY FOR TESTING REASONS RIGHT NOW JLKASDJF;LKJ ASODIFJ OIKAL JSDFP9IOU ASP9D8OFNUY OH8IU32 RJ98OILA UJHSDIUFK HIAJKSDF
-        //speed = 70;
-
-        //Drives::robotOriented();
-        
-        // smallest is around 30, largest is around 130       
-        /// aim at goila
+      PID goal(0.6, 1, 1, 0);
+      vexTimer.clear();
+      while(vexTimer.time(sec) < 0.25){
         // middle of targetted object
-        
-        while(true){
         int targetMid = VisionSensor.largestObject.originX + (VisionSensor.largestObject.width / 2);
         // other random crap value is 'feedforward' stfu its messed up
         int error = screenCenter - targetMid;
@@ -603,7 +603,7 @@ class AutonCommands {
           turning = goal.getOutput(screenCenter, 0, false, targetMid);
         }
         
-
+        turning += -2;
 
         front_left_motor.setVelocity(-turning, velocityUnits::pct);
         front_right_motor.setVelocity(turning, velocityUnits::pct);
@@ -612,34 +612,47 @@ class AutonCommands {
         front_left_motor.spin(directionType::fwd);
         front_right_motor.spin(directionType::fwd);
         back_left_motor.spin(directionType::fwd);
-        back_right_motor.spin(directionType::fwd);
-
-        if(error < 5){
-          front_left_motor.stop();
-          back_left_motor.stop();
-         front_right_motor.stop();
-         back_right_motor.stop();
-         break;
-        }
-
-        
+        back_right_motor.spin(directionType::fwd);    
       }
-
-      for(int i = 0; i < 3; i++){
-          AutonCommands::shoot(75);
-        }
-
+      
+      int turning = 0;
+      front_left_motor.setVelocity(-turning, velocityUnits::pct);
+      front_right_motor.setVelocity(turning, velocityUnits::pct);
+      back_left_motor.setVelocity(-turning, velocityUnits::pct);
+      back_right_motor.setVelocity(turning, velocityUnits::pct);
+      front_left_motor.spin(directionType::fwd);
+      front_right_motor.spin(directionType::fwd);
+      back_left_motor.spin(directionType::fwd);
+      back_right_motor.spin(directionType::fwd);  
     }
 
   public:
-    static void shoot(int runAt){
-        shooter_left.setVelocity(runAt, velocityUnits::pct);
-        shooter_right.setVelocity(runAt, velocityUnits::pct);
-        shooter_left.spin(directionType::fwd);
-        shooter_right.spin(directionType::fwd);
+    static void shoot(double waitTime){
+        // PID flywheelSpeed(0.4, 0, 0.3, 0);
+        // int speed = 0;
+        // int lastSpeed = 0;
+        // lastSpeed = speed;
+        // speed = 0.0028*(VisionSensor.largestObject.width-153.886)*(VisionSensor.largestObject.width-153.886)+28.544;
+        // double percentSpeed = (shooter_left.velocity(velocityUnits::pct) + shooter_right.velocity(velocityUnits::pct))/2;
+        int runAt = 0;
+        if ( VisionSensor.largestObject.width > 80 ) {
+          runAt = 9;
+        } else if ( VisionSensor.largestObject.width > 50 ) {
+          runAt = 9;
+        } else if ( VisionSensor.largestObject.width > 35) {
+          runAt = 10;
+        } else {
+          runAt = 11;
+        }
+        
+        shooter_left.setBrake(coast);
+        shooter_right.setBrake(coast);
+
+        shooter_left.spin(directionType::fwd, runAt, voltageUnits::volt);
+        shooter_right.spin(directionType::fwd, runAt, voltageUnits::volt);
 
         vexTimer.clear();
-        while(vexTimer.time(sec) < 1) {
+        while(vexTimer.time(sec) < waitTime) {
 
         }
 
@@ -651,19 +664,45 @@ class AutonCommands {
         }
         DigitalOutA.set(false);
     }
+
+  public:
+    static void stopShooters(){
+        shooter_left.setVelocity(0, velocityUnits::pct);
+        shooter_right.setVelocity(0, velocityUnits::pct);
+        shooter_left.spin(directionType::fwd);
+        shooter_right.spin(directionType::fwd);
+    }
     
 
   public:
     static void expand(){
-      expansion.spin(directionType::fwd);
       DigitalOutH.set(true);
 
       vexTimer.clear();
         while(vexTimer.time(sec) < 5) {
           
         }
-      expansion.stop();
       DigitalOutH.set(false);
+    }
+
+  public:
+    static void wait(double secs){
+     vexTimer.clear();
+        while(vexTimer.time(sec) < secs) {
+          
+        }
+    }
+
+  public:
+    static void starting(){
+      front_left_motor.spin(directionType::rev);
+      back_right_motor.spin(directionType::rev);
+      vexTimer.clear();
+      while(vexTimer.time(sec) < 0.5){
+
+      }
+      front_left_motor.stop();
+      back_right_motor.stop();
     }
 };
 
@@ -672,29 +711,39 @@ void auton(void){
   // add edits here 
   // hkjasdfiuashdfiuakjshdfnjaksjdfnijkasjdfniujashdfiuajd
   // jio klaksjdfikljas dfikasj dfkl asjdfk jslafd
-  AutonCommands::goTo(-2,0,0.25);
+  AutonCommands::starting();
   AutonCommands::doRoller();
   AutonCommands::upALittle( 100, .25);
   AutonCommands::turning(false, 0.425);
   AutonCommands::spinIntake();
-  AutonCommands::upALittle( -25, 3);
-  AutonCommands::upALittle( 100, .2);
-  AutonCommands::leftyRighty(100, .625);
+  AutonCommands::upALittle( -25, 2.25);
+  AutonCommands::upALittle( 100, .35);
+  AutonCommands::wait(0.25);
+  AutonCommands::leftyRighty(100, .75);
   AutonCommands::stopIntake();
   AutonCommands::upALittle(-100, 1.25);
   AutonCommands::doRoller();
-  AutonCommands::upALittle(100, 0.25);
+  AutonCommands::upALittle(100, 0.15);
+
+  AutonCommands::leftyRighty(-50, .65);
+  AutonCommands::upALittle(100, 1.1);
+  AutonCommands::leftyRighty(50, .25);
+  //AutonCommands::turning(false, 0.165);
   AutonCommands::aimAndShoot();
-  AutonCommands::upALittle(50, .25);
-  AutonCommands::turning(true, 0.25);
-
-  //AutonCommands::expand();
-
-
-
-
+  AutonCommands::stopShooters();
   
+  //AutonCommands::leftyRighty(100, .75);
+  AutonCommands::turning(false, 0.5);
+  AutonCommands::upALittle(-100, 0.5);
+  AutonCommands::upALittle(100, 0.5);
+  AutonCommands::spinIntake();
+  AutonCommands::upALittle(-25, 7);
+  AutonCommands::stopIntake();
+  
+
+  AutonCommands::expand();
 }
+
 
 
 void driving(void) {  
@@ -725,43 +774,56 @@ void driving(void) {
         }
         Inertial2.setHeading(0.0, degrees);
         Inertial2.setRotation(0.0, degrees);
-      } else if ( con1.ButtonRight.pressing() || con1.ButtonLeft.pressing() || con1.ButtonDown.pressing() || con1.ButtonUp.pressing() ) {
-        // turn to specific angle on second controller for rollers
-        int robotHeading = Inertial2.heading();
-        int turning = 0;
-        if ( con1.ButtonLeft.pressing() ) {
-          if ( (robotHeading - 90) % 360 > (90 - robotHeading) % 360 ) {
-            turning = (90 - robotHeading) % 360;
-          } else {
-            turning = -((robotHeading - 90) % 360);
-          }
-        } else if ( con1.ButtonUp.pressing() ) {
-          if ( (robotHeading - 180) % 360 > (180 - robotHeading) % 360 ) {
-            turning = (180 - robotHeading) % 360;
-          } else {
-            turning = -((robotHeading - 180) % 360);
-          }
-        } else if ( con1.ButtonRight.pressing() ) {
-          if ( (robotHeading - 270) % 360 > (270 - robotHeading) % 360 ) {
-            turning = (270 - robotHeading) % 360;
-          } else {
-            turning = -((robotHeading - 270) % 360);
-          }
-        } else if ( con1.ButtonDown.pressing() ) {
-          if ( (robotHeading - 0) % 360 > (0 - robotHeading) % 360 ) {
-            turning = (0 - robotHeading) % 360;
-          } else {
-            turning = -((robotHeading - 0) % 360);
-          }
-        }
+      // } else if ( con1.ButtonRight.pressing() || con1.ButtonLeft.pressing() || con1.ButtonDown.pressing() || con1.ButtonUp.pressing() ) {
+      //   // turn to specific angle on second controller for rollers
+      //   int robotHeading = Inertial2.heading();
+      //   int turning = 0;
+      //   if ( con1.ButtonLeft.pressing() ) {
+      //     if ( (robotHeading - 90) % 360 > (90 - robotHeading) % 360 ) {
+      //       turning = (90 - robotHeading) % 360;
+      //     } else {
+      //       turning = -((robotHeading - 90) % 360);
+      //     }
+      //   } else if ( con1.ButtonUp.pressing() ) {
+      //     if ( (robotHeading - 180) % 360 > (180 - robotHeading) % 360 ) {
+      //       turning = (180 - robotHeading) % 360;
+      //     } else {
+      //       turning = -((robotHeading - 180) % 360);
+      //     }
+      //   } else if ( con1.ButtonRight.pressing() ) {
+      //     if ( (robotHeading - 270) % 360 > (270 - robotHeading) % 360 ) {
+      //       turning = (270 - robotHeading) % 360;
+      //     } else {
+      //       turning = -((robotHeading - 270) % 360);
+      //     }
+      //   } else if ( con1.ButtonDown.pressing() ) {
+      //     if ( (robotHeading - 0) % 360 > (0 - robotHeading) % 360 ) {
+      //       turning = (0 - robotHeading) % 360;
+      //     } else {
+      //       turning = -((robotHeading - 0) % 360);
+      //     }
+      //   }
+      //   front_left_motor.setVelocity(-turning, velocityUnits::pct);
+      //   front_right_motor.setVelocity(turning, velocityUnits::pct);
+      //   back_left_motor.setVelocity(-turning, velocityUnits::pct);
+      //   back_right_motor.setVelocity(turning, velocityUnits::pct);
+      //   front_left_motor.spin(directionType::fwd);
+      //   front_right_motor.spin(directionType::fwd);
+      //   back_left_motor.spin(directionType::fwd);
+      //   back_right_motor.spin(directionType::fwd);
+      } else if(con1.ButtonUp.pressing()){
+        int turning = 50;
+
         front_left_motor.setVelocity(-turning, velocityUnits::pct);
-        front_right_motor.setVelocity(turning, velocityUnits::pct);
+        front_right_motor.setVelocity(-turning, velocityUnits::pct);
         back_left_motor.setVelocity(-turning, velocityUnits::pct);
-        back_right_motor.setVelocity(turning, velocityUnits::pct);
+        back_right_motor.setVelocity(-turning, velocityUnits::pct);
         front_left_motor.spin(directionType::fwd);
         front_right_motor.spin(directionType::fwd);
         back_left_motor.spin(directionType::fwd);
         back_right_motor.spin(directionType::fwd);
+
+      
       } else {
         VisionSensor.takeSnapshot(GOAL_RED);
         //       lastSpeed = speed;
@@ -803,6 +865,8 @@ void driving(void) {
           back_left_motor.spin(directionType::fwd);
           back_right_motor.spin(directionType::fwd);
 
+        
+
           
         } else if ( con1.Axis1.position() != 0  || con1.Axis2.position() != 0  || con1.Axis3.position() != 0  || con1.Axis4.position() != 0 ) {
           Drives::fieldOriented();
@@ -825,35 +889,33 @@ void driving(void) {
 
       /// flywheel spionup joko jasjdklfj lsd.
       if (con1.ButtonR2.pressing() || con1.ButtonR2.pressing()) {
-        lastSpeed = speed;
-        speed = 0.0028*(VisionSensor.largestObject.width-153.886)*(VisionSensor.largestObject.width-153.886)+28.544;
-        double percentSpeed = (shooter_left.velocity(velocityUnits::pct) + shooter_right.velocity(velocityUnits::pct))/2;
-        if ( percentSpeed < 40 ) {
-          flywheelSpeed.setValues(0.4, 0, 1, 0);
+        int runAt = 0;
+        if ( VisionSensor.largestObject.width > 80 ) {
+          runAt = 9;
+        } else if ( VisionSensor.largestObject.width > 50 ) {
+          runAt = 9;
+        } else if ( VisionSensor.largestObject.width > 35) {
+          runAt = 10;
         } else {
-          flywheelSpeed.setValues(0.4, 0, 0.3, 0);
+          runAt = 11;
         }
-        int runAt = flywheelSpeed.getOutput(percentSpeed, lastSpeed, false, speed) + speed;
+        
         con1.Screen.clearScreen();
         con1.Screen.setCursor(1, 1);
         // what we are actually running at
-        con1.Screen.print(percentSpeed);
+        con1.Screen.print(VisionSensor.largestObject.width);
         con1.Screen.setCursor(2, 1);
         // what we are telling the motors to run at (PID to correct)
         con1.Screen.print(runAt);
         con1.Screen.setCursor(3, 1);
         // what we want to run at
         con1.Screen.print(speed);
-        
-        shooter_left.setVelocity(runAt, velocityUnits::pct);
-        shooter_right.setVelocity(runAt, velocityUnits::pct);
-        shooter_left.spin(directionType::fwd);
-        shooter_right.spin(directionType::fwd);
-        // if ( con1.ButtonR1.pressing() ) {
-        //   DigitalOutA.set(false);
-        // } else {
-        //   DigitalOutA.set(true);
-        // }
+        shooter_left.setBrake(coast);
+        shooter_right.setBrake(coast);
+        // shooter_left.setVelocity(runAt, velocityUnits::pct);
+        // shooter_right.setVelocity(runAt, velocityUnits::pct);
+        shooter_left.spin(directionType::fwd, runAt, voltageUnits::volt);
+        shooter_right.spin(directionType::fwd, runAt, voltageUnits::volt);
         
       } else {
         //      lastSpeed = speed;
