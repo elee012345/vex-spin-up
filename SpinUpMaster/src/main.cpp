@@ -115,7 +115,7 @@ class Drives {
 
   public:
     void static fieldOriented() {
-      double maxSpeed = 100;
+      double maxSpeed = 12;
       double headingRadians = Inertial2.heading() * 3.14159/180;
       double yPos = con1.Axis3.position(pct);
       if ( yPos < 0 ) {
@@ -133,6 +133,10 @@ class Drives {
       double cosHeading = cos(headingRadians);
       double rotatedYPos = xPos * sineHeading + yPos * cosHeading;
       double rotatedXPos = xPos * cosHeading - yPos * sineHeading;
+
+      if ( con1.ButtonDown.pressing() ) {
+        rotatedYPos = -7.5;
+      }
       
       //Get the raw sums of the X and Y joystick axes
       double front_left  = (double)(rotatedYPos + rotatedXPos);
@@ -157,11 +161,19 @@ class Drives {
       }
       
       double turning = con1.Axis1.position(pct);
-      if ( turning < 0 ) {
-        turning = (turning/10)*(turning/10) * -1;
+      double magicNumber;
+      if ( abs((int)turning) < 93 ) {
+        magicNumber = 1.025;
       } else {
-        turning = (turning/10)*(turning/10);
+        magicNumber = 1.048;
       }
+      if ( turning < 0 ) {
+        turning = pow(magicNumber, -turning)-1;
+        turning *= -1;
+      } else {
+        turning = pow(magicNumber, turning)-1;
+      }
+      
 
       //Now to consider rotation
       //Naively add the rotational axis
@@ -180,10 +192,10 @@ class Drives {
       back_right  = back_right  / max_raw_sum * maxSpeed;
       
       //Write the manipulated values out to the motors
-      front_left_motor.spin(fwd,front_left, velocityUnits::pct);
-      back_left_motor.spin(fwd,back_left,  velocityUnits::pct);
-      front_right_motor.spin(fwd,front_right,velocityUnits::pct);
-      back_right_motor.spin(fwd,back_right, velocityUnits::pct);
+      front_left_motor.spin(fwd,front_left, voltageUnits::volt);
+      back_left_motor.spin(fwd,back_left,  voltageUnits::volt);
+      front_right_motor.spin(fwd,front_right, voltageUnits::volt);
+      back_right_motor.spin(fwd,back_right, voltageUnits::volt);
     }
 };
 
@@ -854,7 +866,7 @@ void driving(void) {
             turning = goal.getOutput(screenCenter, 0, false, targetMid);
           }
           
-
+          turning += -2;
 
           front_left_motor.setVelocity(-turning, velocityUnits::pct);
           front_right_motor.setVelocity(turning, velocityUnits::pct);
@@ -868,7 +880,7 @@ void driving(void) {
         
 
           
-        } else if ( con1.Axis1.position() != 0  || con1.Axis2.position() != 0  || con1.Axis3.position() != 0  || con1.Axis4.position() != 0 ) {
+        } else if ( con1.Axis1.position() != 0  || con1.Axis2.position() != 0  || con1.Axis3.position() != 0  || con1.Axis4.position() != 0 || con1.ButtonDown.pressing() ) {
           Drives::fieldOriented();
         } else {
           Drives::robotOriented();
@@ -881,7 +893,7 @@ void driving(void) {
         DigitalOutA.set(false);
       }
 
-      if ( con1.ButtonA.pressing() || con2.ButtonA.pressing()){
+      if ( con1.ButtonA.pressing() ){
         DigitalOutH.set(true);
       } else {
         DigitalOutH.set(false);
@@ -929,7 +941,7 @@ void driving(void) {
         lastSpeed = speed;
         speed = 0.0028*(VisionSensor.largestObject.width-153.886)*(VisionSensor.largestObject.width-153.886)+28.544;
         double percentSpeed = (shooter_left.velocity(velocityUnits::pct) + shooter_right.velocity(velocityUnits::pct))/2;
-        int runAt = flywheelSpeed.getOutput(percentSpeed, lastSpeed, false, speed) + speed;
+        int runAt = 0;
         con1.Screen.clearScreen();
         con1.Screen.setCursor(1, 1);
         // what we are actually running at
@@ -944,19 +956,15 @@ void driving(void) {
         shooter_right.setVelocity(0, velocityUnits::pct);
         shooter_left.spin(directionType::fwd);
         shooter_right.spin(directionType::fwd);
-        // if ( con1.ButtonR1.pressing() ) {
-        //   DigitalOutA.set(false);
-        // } else {
-        //   DigitalOutA.set(true);
-        // }
       }
 
 
       if ( con1.ButtonL1.pressing() || con2.ButtonL1.pressing() ) {
         intakeLeft.spin(directionType::fwd);
         intakeRight.spin(directionType::fwd);
-      } else if ( con1.ButtonX.pressing() || con2.ButtonX.pressing() ) {
+      } else if ( con1.ButtonX.pressing() ) {
         intakeLeft.spin(directionType::rev);
+      } else if ( con2.ButtonX.pressing() ) {
         intakeRight.spin(directionType::rev);
       } else {
         intakeLeft.stop();
@@ -966,7 +974,7 @@ void driving(void) {
       
 
 
-      if ( con1.ButtonB.pressing() || con2.ButtonB.pressing()) {
+      if ( con1.ButtonB.pressing() ) {
         expansion.spin(directionType::fwd);
       } else {
         expansion.stop();
@@ -980,16 +988,16 @@ void driving(void) {
 
 void pre_auton(void){
   con1.Screen.print("ur bad");
-    DigitalOutA.set(false);
-    DigitalOutH.set(false);
-    Inertial2.setHeading(0.0, degrees);
-    Inertial2.setRotation(0.0, degrees);
-    Inertial2.startCalibration();
-    while (Inertial2.isCalibrating()) { 
-        task::sleep(10); 
-    }
-    Inertial2.setHeading(0.0, degrees);
-    Inertial2.setRotation(0.0, degrees);
+  DigitalOutA.set(false);
+  DigitalOutH.set(false);
+  Inertial2.setHeading(0.0, degrees);
+  Inertial2.setRotation(0.0, degrees);
+  Inertial2.startCalibration();
+  while (Inertial2.isCalibrating()) { 
+      task::sleep(10); 
+  }
+  Inertial2.setHeading(0.0, degrees);
+  Inertial2.setRotation(0.0, degrees);
 }
 
 
