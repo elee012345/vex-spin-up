@@ -450,66 +450,81 @@ class AutonCommands {
       back_right_motor.stop();
     }
 
-    public:
-      void static runIntake(double secondsToComplete, bool) {
-        intakeLeft.setBrake(coast);
-        intakeRight.setBrake(coast);
-        intakeLeft.setReversed(true);
-        intakeLeft.setVelocity(100, velocityUnits::pct);
-        intakeRight.setVelocity(100, velocityUnits::pct);
-        intakeLeft.spinFor(secondsToComplete, sec);
-        intakeRight.spinFor(secondsToComplete, sec);
-      }
+  public:
+    void static runIntake(double secondsToComplete, bool) {
+      intakeLeft.setBrake(coast);
+      intakeRight.setBrake(coast);
+      intakeLeft.setReversed(true);
+      intakeLeft.setVelocity(100, velocityUnits::pct);
+      intakeRight.setVelocity(100, velocityUnits::pct);
+      intakeLeft.spinFor(secondsToComplete, sec);
+      intakeRight.spinFor(secondsToComplete, sec);
+    }
 
-    public:
-      void static doRoller(){
-        double secondsToComplete = 0.5;
-        intakeLeft.setBrake(coast);
-        intakeRight.setBrake(coast);
-        intakeLeft.setReversed(false);
-        intakeRight.setReversed(true);
-        intakeLeft.setVelocity(100, velocityUnits::pct);
-        intakeRight.setVelocity(100, velocityUnits::pct);
+  public:
+    void static doRoller(){
+      double secondsToComplete = 0.5;
+      intakeLeft.setBrake(coast);
+      intakeRight.setBrake(coast);
+      intakeLeft.setReversed(false);
+      //intakeRight.setReversed(true);
+      intakeLeft.setVelocity(100, velocityUnits::pct);
+      //intakeRight.setVelocity(100, velocityUnits::pct);
 
-        intakeLeft.spin(directionType::fwd);
-        intakeRight.spin(directionType::fwd);
+      intakeLeft.spin(directionType::fwd);
+      //intakeRight.spin(directionType::fwd);
 
 
-        vexTimer.clear();
-        while(vexTimer.time(sec) < secondsToComplete) {
-
-        }
-
-        intakeLeft.stop();
-        intakeRight.stop();
+      vexTimer.clear();
+      while(vexTimer.time(sec) < secondsToComplete) {
 
       }
-    
-    public:
-      void static upALittle( int speed, double secondsToComplete){
+
+      intakeLeft.stop();
+      //intakeRight.stop();
+
+    }
+  
+  /*
+  positive velocity = shooter side front
+  .25 = 2 inches
+  .5 = 7 inches
+  .75 = 17 inches
+  1 = 26 inches
+  1.5 = 45 inches (two tiles)
+  */
+  public:
+    void static upALittle( int speed, double secondsToComplete){
 
 
-        front_left_motor.setVelocity(speed, velocityUnits::pct);
-        back_left_motor.setVelocity(speed , velocityUnits::pct);
-        front_right_motor.setVelocity(speed , velocityUnits::pct);
-        back_right_motor.setVelocity(speed , velocityUnits::pct);
+      front_left_motor.setVelocity(speed, velocityUnits::pct);
+      back_left_motor.setVelocity(speed , velocityUnits::pct);
+      front_right_motor.setVelocity(speed , velocityUnits::pct);
+      back_right_motor.setVelocity(speed , velocityUnits::pct);
 
-        front_left_motor.spin(directionType::fwd);
-        back_left_motor.spin(directionType::fwd);
-        front_right_motor.spin(directionType::fwd);
-        back_right_motor.spin(directionType::fwd);
+      front_left_motor.spin(directionType::fwd);
+      back_left_motor.spin(directionType::fwd);
+      front_right_motor.spin(directionType::fwd);
+      back_right_motor.spin(directionType::fwd);
 
-        vexTimer.clear();
-        while(vexTimer.time(sec) < secondsToComplete) {
+      vexTimer.clear();
+      while(vexTimer.time(sec) < secondsToComplete) {
 
-        }
-
-        front_left_motor.stop();
-        back_left_motor.stop();
-        front_right_motor.stop();
-        back_right_motor.stop();
       }
 
+      front_left_motor.stop();
+      back_left_motor.stop();
+      front_right_motor.stop();
+      back_right_motor.stop();
+    }
+
+  /*
+  false = clockwise
+  .25 = 45 degrees
+  .365 = 90 degrees
+  .6 = 135 degrees
+  .725 = 180 degrees
+  */
   public:
     void static turning(bool rev,double secondsToComplete){
         
@@ -538,108 +553,104 @@ class AutonCommands {
         back_right_motor.stop();
     }
 
-    public:
-      void static leftyRighty(int speed, double secondsToComplete){
-        front_left_motor.setVelocity(-speed, velocityUnits::pct);
-        back_left_motor.setVelocity(speed, velocityUnits::pct);
-        front_right_motor.setVelocity(speed, velocityUnits::pct);
-        back_right_motor.setVelocity(-speed, velocityUnits::pct);
+  //positive velocity = right with intake as front
+  public:
+    void static leftyRighty(int speed, double secondsToComplete){
+      front_left_motor.setVelocity(-speed, velocityUnits::pct);
+      back_left_motor.setVelocity(speed, velocityUnits::pct);
+      front_right_motor.setVelocity(speed, velocityUnits::pct);
+      back_right_motor.setVelocity(-speed, velocityUnits::pct);
 
-        front_left_motor.spin(directionType::fwd);
-        back_left_motor.spin(directionType::fwd);
-        front_right_motor.spin(directionType::fwd);
-        back_right_motor.spin(directionType::fwd);
+      front_left_motor.spin(directionType::fwd);
+      back_left_motor.spin(directionType::fwd);
+      front_right_motor.spin(directionType::fwd);
+      back_right_motor.spin(directionType::fwd);
 
-        vexTimer.clear();
-        while(vexTimer.time(sec) < secondsToComplete) {
-
-        }
-
-        front_left_motor.stop();
-        back_left_motor.stop();
-        front_right_motor.stop();
-        back_right_motor.stop();
-      }
-    
-    public:
-      void static spinIntake(){
-        intakeLeft.setBrake(coast);
-        intakeRight.setBrake(coast);
-        intakeLeft.setReversed(true);
-        intakeRight.setReversed(false);
-        intakeLeft.setVelocity(100, velocityUnits::pct);
-        intakeRight.setVelocity(100, velocityUnits::pct);
-
-        intakeLeft.spin(directionType::fwd);
-        intakeRight.spin(directionType::fwd);
+      vexTimer.clear();
+      while(vexTimer.time(sec) < secondsToComplete) {
 
       }
 
-    public:
-      void static stopIntake(){
+      front_left_motor.stop();
+      back_left_motor.stop();
+      front_right_motor.stop();
+      back_right_motor.stop();
+    }
+  
+  public:
+    void static spinIntake(){
+      intakeLeft.setBrake(coast);
+      intakeRight.setBrake(coast);
+      intakeLeft.setReversed(true);
+      intakeRight.setReversed(false);
+      intakeLeft.setVelocity(100, velocityUnits::pct);
+      intakeRight.setVelocity(100, velocityUnits::pct);
 
-        intakeLeft.stop();
-        intakeRight.stop();
+      intakeLeft.spin(directionType::fwd);
+      intakeRight.spin(directionType::fwd);
 
-      }
+    }
+
+  public:
+    void static stopIntake(){
+
+      intakeLeft.stop();
+      intakeRight.stop();
+
+    }
 
   public:
     void static aimAndShoot(){
-      // PID goal(0.6, 1, 1, 0);
-      // int screenCenter = 158;
-      // VisionSensor.takeSnapshot(GOAL_RED);
-      //   //       lastSpeed = speed;
-      //   //       speed = 0.0028*(VisionSensor.largestObject.width-153.886)*(VisionSensor.largestObject.width-153.886)+28.544;
+      AutonCommands::aim();
 
-      //   // CHANGE LATER THIS IS ONLY FOR TESTING REASONS RIGHT NOW JLKASDJF;LKJ ASODIFJ OIKAL JSDFP9IOU ASP9D8OFNUY OH8IU32 RJ98OILA UJHSDIUFK HIAJKSDF
-      //   //speed = 70;
+      AutonCommands::shoot(1.9);
+      AutonCommands::shoot(0.7);
+      AutonCommands::shoot(0.7);
 
-      //   //Drives::robotOriented();
-        
-      //   // smallest is around 30, largest is around 130       
-      //   /// aim at goila
-      //   // middle of targetted object
-        
-      //   while(true){
-      //   int targetMid = VisionSensor.largestObject.originX + (VisionSensor.largestObject.width / 2);
-      //   // other random crap value is 'feedforward' stfu its messed up
-      //   int error = screenCenter - targetMid;
-      //   goal.setValues(0.2, 0.003, 0, targetMid);
-      //   int turning;
-        
+      AutonCommands::stopShooters();
 
-      //   if ( error < 20 ) {
-      //     turning = goal.getOutput(screenCenter, 0, true, targetMid);
-      //   } else {
-      //     goal.resetError();
-      //     turning = goal.getOutput(screenCenter, 0, false, targetMid);
-      //   }
-        
+    }
+
+  public:
+    void static aim(){
+      PID goal(0.6, 1, 1, 0);
+      int screenCenter = 158;
+      vex::timer timerThing;
+      timerThing.clear();
+      timerThing.reset();
+
+      while(timerThing.time(sec) < 0.8 ) {
+        VisionSensor.takeSnapshot(GOAL_RED);
+        if ( VisionSensor.largestObject.exists) {
+          int targetMid = VisionSensor.largestObject.originX + (VisionSensor.largestObject.width / 2);
+          // other random crap value is 'feedforward' stfu its messed up
+          int error = screenCenter - targetMid;
+          goal.setValues(0.2, 0.003, 0, targetMid);
+          int turning = error * -0.2;
+
+          turning += -2;
 
 
-      //   front_left_motor.setVelocity(-turning, velocityUnits::pct);
-      //   front_right_motor.setVelocity(turning, velocityUnits::pct);
-      //   back_left_motor.setVelocity(-turning, velocityUnits::pct);
-      //   back_right_motor.setVelocity(turning, velocityUnits::pct);
-      //   front_left_motor.spin(directionType::fwd);
-      //   front_right_motor.spin(directionType::fwd);
-      //   back_left_motor.spin(directionType::fwd);
-      //   back_right_motor.spin(directionType::fwd);
-
-      //   if(error < 5){
-      //     front_left_motor.stop();
-      //     back_left_motor.stop();
-      //    front_right_motor.stop();
-      //    back_right_motor.stop();
-      //    break;
-      //   }
-
-        
-      // }
-
-      AutonCommands::shoot(2);
-      AutonCommands::shoot(1);
-      AutonCommands::shoot(1);
+          front_left_motor.setVelocity(-turning, velocityUnits::pct);
+          front_right_motor.setVelocity(turning, velocityUnits::pct);
+          back_left_motor.setVelocity(-turning, velocityUnits::pct);
+          back_right_motor.setVelocity(turning, velocityUnits::pct);
+          front_left_motor.spin(directionType::fwd);
+          front_right_motor.spin(directionType::fwd);
+          back_left_motor.spin(directionType::fwd);
+          back_right_motor.spin(directionType::fwd);
+        } else {
+          front_left_motor.stop();
+          front_right_motor.stop();
+          back_left_motor.stop();
+          back_right_motor.stop();
+        }
+      }
+      front_left_motor.stop();
+      front_right_motor.stop();
+      back_left_motor.stop();
+      back_right_motor.stop();
+      
 
     }
 
@@ -651,6 +662,7 @@ class AutonCommands {
         // lastSpeed = speed;
         // speed = 0.0028*(VisionSensor.largestObject.width-153.886)*(VisionSensor.largestObject.width-153.886)+28.544;
         // double percentSpeed = (shooter_left.velocity(velocityUnits::pct) + shooter_right.velocity(velocityUnits::pct))/2;
+        VisionSensor.takeSnapshot(GOAL_RED); 
         int runAt = 0;
         if ( VisionSensor.largestObject.width > 80 ) {
           runAt = 9;
@@ -676,7 +688,8 @@ class AutonCommands {
 
         DigitalOutA.set(true);
         vexTimer.clear();
-        while(vexTimer.time(sec) < 1) {
+        while(vexTimer.time(sec) < 0.45
+        ) {
 
         }
         DigitalOutA.set(false);
@@ -693,14 +706,12 @@ class AutonCommands {
 
   public:
     static void expand(){
-      expansion.spin(directionType::fwd);
       DigitalOutH.set(true);
 
       vexTimer.clear();
         while(vexTimer.time(sec) < 5) {
           
         }
-      expansion.stop();
       DigitalOutH.set(false);
     }
 
@@ -711,54 +722,119 @@ class AutonCommands {
           
         }
     }
+
+  public:
+    static void starting(){
+      //leftyRighty(100, 0.125);
+      upALittle(-100, .25);
+    }
+
+  public:
+    static void diagonal(double secondsToComplete){
+      back_left_motor.setVelocity(100, velocityUnits::pct);
+      front_right_motor.setVelocity(100, velocityUnits::pct);
+      back_left_motor.spin(directionType::fwd);
+      front_right_motor.spin(directionType::fwd);
+      vexTimer.clear();
+      while(vexTimer.time(sec) < secondsToComplete) {
+
+      }
+      back_left_motor.stop();
+      front_right_motor.stop();
+
+
+    }
 };
 
 
 void auton(void){
-  // add edits here 
-  // hkjasdfiuashdfiuakjshdfnjaksjdfnijkasjdfniujashdfiuajd
-  // jio klaksjdfikljas dfikasj dfkl asjdfk jslafd
-  AutonCommands::upALittle(-100, .25);
+  AutonCommands::starting();
   AutonCommands::doRoller();
-  AutonCommands::upALittle( 100, .25);
-  AutonCommands::turning(false, 0.425);
+  //AutonCommands::wait(1);
+  AutonCommands::upALittle( 100, .2);
+  //AutonCommands::wait(1);
+  AutonCommands::leftyRighty(-50, .2);
+  //AutonCommands::wait(1);
+  AutonCommands::turning(false, 0.6);
+  //AutonCommands::wait(1);
   AutonCommands::spinIntake();
-  AutonCommands::upALittle( -25, 2);
-  AutonCommands::upALittle( 100, .25);
-  AutonCommands::wait(0.75);
-  AutonCommands::leftyRighty(100, .65);
+  AutonCommands::upALittle( -50, 1);
+  AutonCommands::turning(true, .15);
   AutonCommands::stopIntake();
-  AutonCommands::upALittle(-100, 1.25);
+  AutonCommands::upALittle( -100, .5);
   AutonCommands::doRoller();
-  AutonCommands::upALittle(100, 0.15);
-  AutonCommands::leftyRighty(-50, .75);
-  AutonCommands::upALittle(100, 1.1);
-  AutonCommands::leftyRighty(50, .25);
-  AutonCommands::turning(false, 0.125);
+  AutonCommands::upALittle(100, .25);
+  AutonCommands::spinIntake();
+  AutonCommands::diagonal(.65);
+  AutonCommands::turning(true, .365);
+  AutonCommands::wait(0.5);
+  AutonCommands::stopIntake();
+  //AutonCommands::turning(true, 0.1);
   AutonCommands::aimAndShoot();
-  AutonCommands::stopShooters();
-  
-  //AutonCommands::leftyRighty(100, .75);
-  AutonCommands::turning(false, 0.5);
-  AutonCommands::upALittle(-100, 1.25);
-  AutonCommands::upALittle(100, 0.5);
+
+  AutonCommands::turning(true, .5);
   AutonCommands::spinIntake();
-  AutonCommands::upALittle(-25, 2);
+  AutonCommands::upALittle(-50, 2);
+  AutonCommands::turning(false, .25);
+  AutonCommands::wait(2);
+
+
   AutonCommands::stopIntake();
+  AutonCommands::aimAndShoot();
+
+  // AutonCommands::wait(0.25);
+  // AutonCommands::leftyRighty(100, .75);
+  // AutonCommands::stopIntake();
+  // AutonCommands::upALittle(-100, 1.25);
+  // AutonCommands::doRoller();
+  // AutonCommands::upALittle(100, 0.15);
+
+  // AutonCommands::leftyRighty(-50, .65);
+  // AutonCommands::upALittle(100, 1.1);
+  // AutonCommands::leftyRighty(50, .25);
+  // AutonCommands::aimAndShoot();
+  // AutonCommands::stopShooters();
+  
+  // AutonCommands::turning(false, 0.5);
+  // AutonCommands::upALittle(-100, 0.5);
+  // AutonCommands::upALittle(100, 0.5);
+  // AutonCommands::spinIntake();
+  // AutonCommands::upALittle(-25, 7);
+  // AutonCommands::stopIntake();
   
 
-  //AutonCommands::expand();
+  // AutonCommands::expand();
+}
 
-
-
-
-  
+void driverAuton() {
+  AutonCommands::starting();
+  AutonCommands::doRoller();
+  //AutonCommands::wait(1);
+  AutonCommands::upALittle( 100, .2);
+  //AutonCommands::wait(1);
+  AutonCommands::leftyRighty(-50, .2);
+  //AutonCommands::wait(1);
+  AutonCommands::turning(false, 0.6);
+  //AutonCommands::wait(1);
+  AutonCommands::spinIntake();
+  AutonCommands::upALittle( -50, 1);
+  AutonCommands::turning(true, .15);
+  AutonCommands::stopIntake();
+  AutonCommands::upALittle( -100, .5);
+  AutonCommands::doRoller();
+  AutonCommands::upALittle(100, .25);
+  AutonCommands::spinIntake();
+  AutonCommands::diagonal(.65);
+  AutonCommands::turning(true, .365);
+  AutonCommands::wait(0.5);
+  AutonCommands::stopIntake();
+  //AutonCommands::turning(true, 0.1);
+  AutonCommands::aimAndShoot();
 }
 
 
-
 void driving(void) {  
-
+    driverAuton();
     shooter_left.setBrake(coast);
     shooter_right.setBrake(coast);
     intakeLeft.setBrake(coast);
@@ -971,6 +1047,10 @@ void driving(void) {
 
  
 }
+
+
+ 
+
 
 void pre_auton(void){
   con1.Screen.print("ur bad");
