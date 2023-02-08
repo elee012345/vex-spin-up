@@ -604,8 +604,8 @@ class AutonCommands {
       AutonCommands::aim();
 
       AutonCommands::shoot(2);
-      AutonCommands::shoot(1);
-      AutonCommands::shoot(1);
+      AutonCommands::shoot(1.5);
+      AutonCommands::shoot(1.5);
 
       AutonCommands::stopShooters();
 
@@ -613,82 +613,43 @@ class AutonCommands {
 
   public:
     void static aim(){
-      int screenCenter = 158;
       PID goal(0.6, 1, 1, 0);
-      vexTimer.clear();
-      while(vexTimer.time(sec) < 5){
+      int screenCenter = 158;
+      vex::timer timerThing;
+      timerThing.clear();
+      timerThing.reset();
+
+      while(timerThing.time(sec) < 0.8 ) {
         VisionSensor.takeSnapshot(GOAL_RED);
-        if(VisionSensor.largestObject.exists){
-        // middle of targetted object
-        int targetMid = VisionSensor.largestObject.originX + (VisionSensor.largestObject.width / 2);
-        // other random crap value is 'feedforward' stfu its messed up
-        int error = screenCenter - targetMid;
-        goal.setValues(0.2, 0.003, 0, targetMid);
-        int turning;
+        if ( VisionSensor.largestObject.exists) {
+          int targetMid = VisionSensor.largestObject.originX + (VisionSensor.largestObject.width / 2);
+          // other random crap value is 'feedforward' stfu its messed up
+          int error = screenCenter - targetMid;
+          goal.setValues(0.2, 0.003, 0, targetMid);
+          int turning = error * -0.2;
 
-        
+          turning += -2;
 
-        if ( error < 20 ) {
-          turning = goal.getOutput(screenCenter, 0, true, targetMid);
-          
+
+          front_left_motor.setVelocity(-turning, velocityUnits::pct);
+          front_right_motor.setVelocity(turning, velocityUnits::pct);
+          back_left_motor.setVelocity(-turning, velocityUnits::pct);
+          back_right_motor.setVelocity(turning, velocityUnits::pct);
+          front_left_motor.spin(directionType::fwd);
+          front_right_motor.spin(directionType::fwd);
+          back_left_motor.spin(directionType::fwd);
+          back_right_motor.spin(directionType::fwd);
         } else {
-          goal.resetError();
-          turning = goal.getOutput(screenCenter, 0, false, targetMid);
+          front_left_motor.stop();
+          front_right_motor.stop();
+          back_left_motor.stop();
+          back_right_motor.stop();
         }
-        
-        turning += -2;
-        front_left_motor.setVelocity(-turning, velocityUnits::pct);
-        front_right_motor.setVelocity(turning, velocityUnits::pct);
-        back_left_motor.setVelocity(-turning, velocityUnits::pct);
-        back_right_motor.setVelocity(turning, velocityUnits::pct);
-        front_left_motor.spin(directionType::fwd);
-        front_right_motor.spin(directionType::fwd);
-        back_left_motor.spin(directionType::fwd);
-        back_right_motor.spin(directionType::fwd);
-
-        int speed = 0;
-        int lastSpeed = speed;
-        speed = 0.0028*(VisionSensor.largestObject.width-153.886)*(VisionSensor.largestObject.width-153.886)+28.544;
-        int runAt = 0;
-                con1.Screen.clearScreen();
-        con1.Screen.setCursor(1, 1);
-        // what we are actually running at
-        con1.Screen.print(VisionSensor.largestObject.width);
-        con1.Screen.setCursor(2, 1);
-        // what we are telling the motors to run at (PID to correct)
-        con1.Screen.print(runAt);
-        con1.Screen.setCursor(3, 1);
-        // what we want to run at
-        con1.Screen.print(speed);
-        }
-        else{
-      int turning = 0;
-      front_left_motor.setVelocity(-turning, velocityUnits::pct);
-      front_right_motor.setVelocity(turning, velocityUnits::pct);
-      back_left_motor.setVelocity(-turning, velocityUnits::pct);
-      back_right_motor.setVelocity(turning, velocityUnits::pct);
-      front_left_motor.spin(directionType::fwd);
-      front_right_motor.spin(directionType::fwd);
-      back_left_motor.spin(directionType::fwd);
-      back_right_motor.spin(directionType::fwd); 
-              int speed = 0;
-        int lastSpeed = speed;
-        speed = 0.0028*(VisionSensor.largestObject.width-153.886)*(VisionSensor.largestObject.width-153.886)+28.544;
-        int runAt = 0;
-                con1.Screen.clearScreen();
-        con1.Screen.setCursor(1, 1);
-        // what we are actually running at
-        con1.Screen.print(VisionSensor.largestObject.width);
-        con1.Screen.setCursor(2, 1);
-        // what we are telling the motors to run at (PID to correct)
-        con1.Screen.print(runAt);
-        con1.Screen.setCursor(3, 1);
-        // what we want to run at
-        con1.Screen.print(speed); 
-      break;
-        }
-
       }
+      front_left_motor.stop();
+      front_right_motor.stop();
+      back_left_motor.stop();
+      back_right_motor.stop();
       
 
     }
@@ -727,7 +688,7 @@ class AutonCommands {
 
         DigitalOutA.set(true);
         vexTimer.clear();
-        while(vexTimer.time(sec) < 1) {
+        while(vexTimer.time(sec) < 0.45) {
 
         }
         DigitalOutA.set(false);
@@ -810,7 +771,7 @@ void auton(void){
   //AutonCommands::turning(true, 0.1);
   AutonCommands::aimAndShoot();
 
-  AutonCommands::turning(true, .65);
+  AutonCommands::turning(true, .5);
   AutonCommands::spinIntake();
   AutonCommands::upALittle(-50, 2);
   AutonCommands::turning(false, .25);
@@ -819,34 +780,54 @@ void auton(void){
 
   AutonCommands::stopIntake();
   AutonCommands::aimAndShoot();
-
-  // AutonCommands::wait(0.25);
-  // AutonCommands::leftyRighty(100, .75);
-  // AutonCommands::stopIntake();
-  // AutonCommands::upALittle(-100, 1.25);
-  // AutonCommands::doRoller();
-  // AutonCommands::upALittle(100, 0.15);
-
-  // AutonCommands::leftyRighty(-50, .65);
-  // AutonCommands::upALittle(100, 1.1);
-  // AutonCommands::leftyRighty(50, .25);
-  // AutonCommands::aimAndShoot();
-  // AutonCommands::stopShooters();
-  
-  // AutonCommands::turning(false, 0.5);
-  // AutonCommands::upALittle(-100, 0.5);
-  // AutonCommands::upALittle(100, 0.5);
-  // AutonCommands::spinIntake();
-  // AutonCommands::upALittle(-25, 7);
-  // AutonCommands::stopIntake();
   
 
   // AutonCommands::expand();
 }
 
+void driverAuton() {
+  AutonCommands::starting();
+  AutonCommands::doRoller();
+  //AutonCommands::wait(1);
+  AutonCommands::upALittle( 100, .2);
+  //AutonCommands::wait(1);
+  AutonCommands::leftyRighty(-50, .2);
+  //AutonCommands::wait(1);
+  AutonCommands::turning(false, 0.6);
+  //AutonCommands::wait(1);
+  AutonCommands::spinIntake();
+  AutonCommands::upALittle( -50, 1);
+  AutonCommands::turning(true, .15);
+  AutonCommands::stopIntake();
+  AutonCommands::upALittle( -100, .5);
+  AutonCommands::doRoller();
+  AutonCommands::upALittle(100, .25);
+  AutonCommands::spinIntake();
+  AutonCommands::diagonal(.65);
+  AutonCommands::turning(true, .365);
+  AutonCommands::wait(0.5);
+  AutonCommands::stopIntake();
+  //AutonCommands::turning(true, 0.1);
+  AutonCommands::aimAndShoot();
+  AutonCommands::turning(true, .5835);
+  AutonCommands::spinIntake();
+  AutonCommands::upALittle(-25, 3.75);
+  AutonCommands::turning(false, .345);
+  AutonCommands::wait(2);
+  AutonCommands::stopIntake();
+  AutonCommands::aimAndShoot();
+  AutonCommands::turning(true, .31);
+  AutonCommands::upALittle(-100, 1);
+  AutonCommands::upALittle(100, 0.7);
+  AutonCommands::spinIntake();
+  AutonCommands::upALittle(-25, 3.5);
 
+
+}
 
 void driving(void) {  
+
+    driverAuton();
 
     shooter_left.setBrake(coast);
     shooter_right.setBrake(coast);
