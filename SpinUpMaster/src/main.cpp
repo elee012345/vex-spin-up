@@ -666,9 +666,9 @@ class AutonCommands {
     void static aimAndShoot(){
       AutonCommands::aim();
 
-      AutonCommands::shoot(1.9);
-      AutonCommands::shoot(0.7);
-      AutonCommands::shoot(0.7);
+      AutonCommands::shoot(2);
+      AutonCommands::shoot(1);
+      AutonCommands::shoot(1);
 
       AutonCommands::stopShooters();
 
@@ -840,6 +840,16 @@ class AutonCommands {
       shooter_right.spin(directionType::fwd);
     }
 
+  public:
+    void static intakeThree(double dist){
+      AutonCommands::upALittle(-100, dist);
+      AutonCommands::upALittle(75, 0.3);
+      AutonCommands::spinIntake();
+      AutonCommands::upALittle(-7, 6);
+      AutonCommands::wait(0.5);
+      AutonCommands::stopIntake();
+    }
+
     
 };
 
@@ -868,16 +878,14 @@ void auton1(void) {
   
 }
 
+
 void auton(void){
+  //first three
   AutonCommands::starting();
   AutonCommands::doRoller();
-  //AutonCommands::wait(1);
   AutonCommands::upALittle( 100, .2);
-  //AutonCommands::wait(1);
   AutonCommands::leftyRighty(-50, .2);
-  //AutonCommands::wait(1);
   AutonCommands::turning(false, 0.6);
-  //AutonCommands::wait(1);
   AutonCommands::spinIntake();
   AutonCommands::upALittle( -50, 1);
   AutonCommands::turning(true, .15);
@@ -886,25 +894,38 @@ void auton(void){
   AutonCommands::doRoller();
   AutonCommands::upALittle(100, .25);
   AutonCommands::spinIntake();
-  AutonCommands::diagonal(.65);
+  AutonCommands::diagonal(.8);
   AutonCommands::turning(true, .365);
-  AutonCommands::wait(0.5);
+  AutonCommands::spinUpFlywheel();
+  AutonCommands::upALittle(75, 0.65);
   AutonCommands::stopIntake();
-  //AutonCommands::turning(true, 0.1);
   AutonCommands::aimAndShoot();
 
-  AutonCommands::turning(true, .5);
+  //second three
+
+  AutonCommands::upALittle(-50, 0.2);
+  AutonCommands::turning(true, .615);
   AutonCommands::spinIntake();
-  AutonCommands::upALittle(-50, 2);
-  AutonCommands::turning(false, .25);
+  AutonCommands::upALittle(-20, 3.85);
+  AutonCommands::turning(false, .345);
   AutonCommands::wait(2);
-
-
   AutonCommands::stopIntake();
   AutonCommands::aimAndShoot();
-  
 
-  // AutonCommands::expand();
+
+  //third three
+  AutonCommands::turning(true, .4);
+  AutonCommands::wait(0.25);
+  AutonCommands::intakeThree(1.4);
+  AutonCommands::turning(false, 0.20);
+  AutonCommands::upALittle(100, 0.5);
+  AutonCommands::aimAndShoot();
+
+  //fourth three
+  AutonCommands::upALittle(-50, 0.4);
+  AutonCommands::turning(false, .25);
+  AutonCommands::intakeThree(0.85);
+
 }
 
 void driverAuton() {
@@ -915,7 +936,8 @@ void driverAuton() {
   //AutonCommands::wait(1);
   AutonCommands::leftyRighty(-50, .2);
   //AutonCommands::wait(1);
-  AutonCommands::turning(false, 0.6);
+  //AutonCommands::turning(false, 0.63);
+  AutonCommands::turnTo(60, 50);
   //AutonCommands::wait(1);
   AutonCommands::spinIntake();
   AutonCommands::upALittle( -50, 1);
@@ -931,7 +953,7 @@ void driverAuton() {
   AutonCommands::stopIntake();
   //AutonCommands::turning(true, 0.1);
   AutonCommands::aimAndShoot();
-  AutonCommands::turning(true, .5835);
+  AutonCommands::turning(true, .6);
   AutonCommands::spinIntake();
   AutonCommands::upALittle(-25, 3.75);
   AutonCommands::turning(false, .345);
@@ -951,7 +973,7 @@ void driverAuton() {
 
 void driving(void) {  
 
-    driverAuton();
+    //driverAuton();
 
     shooter_left.setBrake(coast);
     shooter_right.setBrake(coast);
@@ -1203,7 +1225,7 @@ void pre_auton(void){
 
 
 int main(){
-  Competition.autonomous(auton1);
+  Competition.autonomous(auton);
   Competition.drivercontrol(driving);
 
 
