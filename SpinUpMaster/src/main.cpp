@@ -37,7 +37,6 @@ vex::motor      shooter_left(vex::PORT7, vex::gearSetting::ratio18_1, true);
 vex::motor      shooter_right(vex::PORT8, vex::gearSetting::ratio18_1, false);
 vex::gps        gps(vex::PORT17, 0, turnType::right);
 vex::vision     VisionSensor(vex::PORT10);
-vex::motor      expansion(vex::PORT20);
 vex::competition Competition;
 vex::timer vexTimer;
 vex::optical colorSensor(vex::PORT11, false);
@@ -513,6 +512,58 @@ class AutonCommands {
       back_right_motor.stop();
     }
 
+
+    public:
+    // speed in percentage
+    void static turnToAbsolute(int endAngle, int speed) {
+      front_left_motor.setBrake(brakeType::brake);
+      front_right_motor.setBrake(brakeType::brake);
+      back_left_motor.setBrake(brakeType::brake);
+      back_right_motor.setBrake(brakeType::brake);
+      
+      front_left_motor.setStopping(brakeType::brake);
+      front_right_motor.setStopping(brakeType::brake);
+      back_left_motor.setStopping(brakeType::brake);
+      back_right_motor.setStopping(brakeType::brake);
+
+      front_left_motor.setVelocity(speed, velocityUnits::pct);
+      back_left_motor.setVelocity(speed, velocityUnits::pct);
+      front_right_motor.setVelocity(-speed, velocityUnits::pct);
+      back_right_motor.setVelocity(-speed, velocityUnits::pct);
+
+      front_left_motor.spin(directionType::fwd);
+      back_left_motor.spin(directionType::fwd);
+      front_right_motor.spin(directionType::fwd);
+      back_right_motor.spin(directionType::fwd);
+      int start_angle = -Inertial2.orientation(yaw, deg);
+      if ( endAngle < start_angle ) {
+        con1.Screen.clearScreen();
+        con1.Screen.setCursor(1, 1);
+        con1.Screen.print("turn left");
+        while ( -Inertial2.orientation(yaw, deg) > endAngle ) {
+          con1.Screen.clearScreen();
+          con1.Screen.setCursor(1, 1);
+          con1.Screen.print("turning left");
+        }
+      } else  {
+        con1.Screen.clearScreen();
+        con1.Screen.setCursor(1, 1);
+        con1.Screen.print("turn right");
+        while ( -Inertial2.orientation(yaw, deg) < endAngle ) {
+          con1.Screen.clearScreen();
+          con1.Screen.setCursor(1, 1);
+          con1.Screen.print(Inertial2.orientation(yaw, deg));
+          con1.Screen.setCursor(1, 2);
+        }
+      }
+      con1.Screen.clearScreen();
+      front_left_motor.stop();
+      back_left_motor.stop();
+      front_right_motor.stop();
+      back_right_motor.stop();
+    }
+
+
   public:
     void static runIntake(double secondsToComplete, bool) {
       intakeLeft.setBrake(coast);
@@ -854,26 +905,28 @@ class AutonCommands {
 };
 
 void auton1(void) {
+  AutonCommands::turnToAbsolute(90, 30);
+  AutonCommands::turnToAbsolute(0, -30);
   
-  AutonCommands::goTo(0, -3, 0.4);
-  AutonCommands::spinUpFlywheel();
-  AutonCommands::starting();
-  AutonCommands::doRollerfast();
-  
-  AutonCommands::goTo(2.5, 4, 0.3);
-  AutonCommands::turnTo(5, 5);
-  AutonCommands::shoot(2);
-  AutonCommands::shoot(1);
-  AutonCommands::stopShooters();
-  AutonCommands::turnTo(100, 40);
-  AutonCommands::spinIntake();
-  AutonCommands::goTo(-50, 0, 3);
-  AutonCommands::spinUpFlywheel();
-  AutonCommands::turnTo(-73, -60);
-  AutonCommands::shoot(2.3);
-  AutonCommands::shoot(1.4);
-  AutonCommands::stopShooters();
-  AutonCommands::stopIntake();
+  //    AutonCommands::goTo(0, -3, 0.4);
+  //    AutonCommands::spinUpFlywheel();
+  //    AutonCommands::starting();
+  //    AutonCommands::doRollerfast();
+  //    
+  //    AutonCommands::goTo(2.5, 4, 0.3);
+  //    AutonCommands::turnTo(5, 5);
+  //    AutonCommands::shoot(2);
+  //    AutonCommands::shoot(1);
+  //    AutonCommands::stopShooters();
+  //    AutonCommands::turnTo(100, 40);
+  //    AutonCommands::spinIntake();
+  //    AutonCommands::goTo(-50, 0, 3);
+  //    AutonCommands::spinUpFlywheel();
+  //    AutonCommands::turnTo(-73, -60);
+  //    AutonCommands::shoot(2.3);
+  //    AutonCommands::shoot(1.4);
+  //    AutonCommands::stopShooters();
+  //    AutonCommands::stopIntake();
 
   
 }
@@ -1002,37 +1055,6 @@ void driving(void) {
         }
         Inertial2.setHeading(0.0, degrees);
         Inertial2.setRotation(0.0, degrees);
-      } else if ( con1.ButtonRight.pressing() || con1.ButtonLeft.pressing() || con1.ButtonUp.pressing() ) {
-        // turn to specific angle on second controller for rollers
-        int robotHeading = Inertial2.heading();
-        int turning = 0;
-        if ( con1.ButtonLeft.pressing() ) {
-          if ( (robotHeading - 90) % 360 > (90 - robotHeading) % 360 ) {
-            turning = (90 - robotHeading) % 360;
-          } else {
-            turning = -((robotHeading - 90) % 360);
-          }
-        } else if ( con1.ButtonUp.pressing() ) {
-          if ( (robotHeading - 180) % 360 > (180 - robotHeading) % 360 ) {
-            turning = (180 - robotHeading) % 360;
-          } else {
-            turning = -((robotHeading - 180) % 360);
-          }
-        } else if ( con1.ButtonRight.pressing() ) {
-          if ( (robotHeading - 270) % 360 > (270 - robotHeading) % 360 ) {
-            turning = (270 - robotHeading) % 360;
-          } else {
-            turning = -((robotHeading - 270) % 360);
-          }
-        }
-        front_left_motor.setVelocity(-turning, velocityUnits::pct);
-        front_right_motor.setVelocity(turning, velocityUnits::pct);
-        back_left_motor.setVelocity(-turning, velocityUnits::pct);
-        back_right_motor.setVelocity(turning, velocityUnits::pct);
-        front_left_motor.spin(directionType::fwd);
-        front_right_motor.spin(directionType::fwd);
-        back_left_motor.spin(directionType::fwd);
-        back_right_motor.spin(directionType::fwd);
       } else {
 
         goalcol = 0;
@@ -1052,21 +1074,23 @@ void driving(void) {
           /// aim at goal
           if ( (con1.ButtonL2.pressing()|| con2.ButtonL2.pressing()) && VisionSensor.largestObject.exists ) {
             
-            // middle of targetted object
+            // get middle of targetted object
             int targetMid = VisionSensor.largestObject.originX + (VisionSensor.largestObject.width / 2);
-            // other random crap value is 'feedforward' stfu its messed up
+            
+
             int error = screenCenter - targetMid;
             goal.setValues(0.2, 0.003, 0, targetMid);
             int turning;
             
-
+            // aiming
             if ( error < 20 ) {
               turning = goal.getOutput(screenCenter, 0, true, targetMid);
             } else {
               goal.resetError();
               turning = goal.getOutput(screenCenter, 0, false, targetMid);
             }
-            
+
+            // other random crap value is 'feedforward' stfu its messed up
             turning += -2;
 
             front_left_motor.setVelocity(-turning, velocityUnits::pct);
@@ -1088,13 +1112,16 @@ void driving(void) {
         }
       }
       
+
+      // shoot
       if ( con1.ButtonR1.pressing() || con2.ButtonR1.pressing()) {
         DigitalOutA.set(true);
       } else {
         DigitalOutA.set(false);
       }
 
-      if ( con1.ButtonA.pressing() ){
+      // expansion
+      if ( con1.ButtonUp.pressing() ){
         DigitalOutH.set(true);
       } else {
         DigitalOutH.set(false);
@@ -1106,7 +1133,8 @@ void driving(void) {
         if ( goalcol != 2 ) {
           speed = 0.0028*(VisionSensor.largestObject.width-153.886)*(VisionSensor.largestObject.width-153.886)+28.544;
         }
-          
+        
+        // variable flywheel speed
         int runAt = 0;
         if ( VisionSensor.largestObject.width > 95 ) {
           runAt = 11;
@@ -1132,26 +1160,11 @@ void driving(void) {
         con1.Screen.print(speed);
         shooter_left.setBrake(coast);
         shooter_right.setBrake(coast);
-        // shooter_left.setVelocity(runAt, velocityUnits::pct);
-        // shooter_right.setVelocity(runAt, velocityUnits::pct);
         shooter_left.spin(directionType::fwd, runAt, voltageUnits::volt);
         shooter_right.spin(directionType::fwd, runAt, voltageUnits::volt);
-        //task::sleep(100);
-        // if ( con1.ButtonR1.pressing() ) {
-        //   DigitalOutA.set(false);
-        // } else {
-        //   DigitalOutA.set(true);
-        // }
+      
         
       } else {
-        //      lastSpeed = speed;
-        //      speed = 0.0028*(VisionSensor.largestObject.width-153.886)*(VisionSensor.largestObject.width-153.886)+28.544;
-        //      double percentSpeed = (shooter_left.velocity(velocityUnits::pct) + shooter_right.velocity(velocityUnits::pct))/2;
-        //      int runAt = flywheelSpeed.getOutput(percentSpeed, lastSpeed, false, speed) + speed;
-        //      shooter_left.setVelocity(0, velocityUnits::pct);
-        //      shooter_right.setVelocity(0, velocityUnits::pct);
-        //      shooter_left.spin(directionType::fwd);
-        //      shooter_right.spin(directionType::fwd);
         lastSpeed = speed;
         speed = 0.0028*(VisionSensor.largestObject.width-153.886)*(VisionSensor.largestObject.width-153.886)+28.544;
         double percentSpeed = (shooter_left.velocity(velocityUnits::pct) + shooter_right.velocity(velocityUnits::pct))/2;
@@ -1172,30 +1185,24 @@ void driving(void) {
         shooter_right.spin(directionType::fwd);
       }
 
-
+      // intake
       if ( con1.ButtonL1.pressing() || con2.ButtonL1.pressing() ) {
         intakeLeft.spin(directionType::fwd);
         intakeRight.spin(directionType::fwd);
+      // rollers
       } else if ( con2.ButtonY.pressing() ) {
         intakeLeft.spin(directionType::rev);
-      } else if ( con1.ButtonX.pressing() ) {
+      // roller to color
+      } else if ( con1.ButtonB.pressing() ) {
         if ( colorSensor.color() != vex::color::red ) {
           intakeLeft.spin(directionType::rev);
         }
+      // outake
       } else if ( con2.ButtonX.pressing() ) {
         intakeRight.spin(directionType::rev);
       } else {
         intakeLeft.stop();
         intakeRight.stop();
-      }
-
-      
-
-
-      if ( con1.ButtonB.pressing() ) {
-        expansion.spin(directionType::fwd);
-      } else {
-        expansion.stop();
       }
       
       
