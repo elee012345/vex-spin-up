@@ -635,6 +635,75 @@ class AutonCommands {
       back_right_motor.stop();
     }
 
+
+    public:
+    // speed in percentage
+    // endAngle from 0-359
+    // speed: positive speed = counterclockwise
+    void static turnToAbsolute(int endAngle, int speed) {
+
+      // converts 90 to 270, 270 to 90, 120 to 240, etc
+      // basically reflects over vertical center line
+      // then makes it negative to subtract that angle
+      if ( speed < 0 ) {
+        endAngle = 360 - endAngle;
+        endAngle *= -1;
+      }
+
+      
+
+      int start_angle = -Inertial2.orientation(yaw, deg);
+      start_angle += endAngle;
+
+
+      front_left_motor.setBrake(brakeType::brake);
+      front_right_motor.setBrake(brakeType::brake);
+      back_left_motor.setBrake(brakeType::brake);
+      back_right_motor.setBrake(brakeType::brake);
+      
+      front_left_motor.setStopping(brakeType::brake);
+      front_right_motor.setStopping(brakeType::brake);
+      back_left_motor.setStopping(brakeType::brake);
+      back_right_motor.setStopping(brakeType::brake);
+
+      front_left_motor.setVelocity(speed, velocityUnits::pct);
+      back_left_motor.setVelocity(speed, velocityUnits::pct);
+      front_right_motor.setVelocity(-speed, velocityUnits::pct);
+      back_right_motor.setVelocity(-speed, velocityUnits::pct);
+
+      front_left_motor.spin(directionType::fwd);
+      back_left_motor.spin(directionType::fwd);
+      front_right_motor.spin(directionType::fwd);
+      back_right_motor.spin(directionType::fwd);
+      
+      if ( endAngle < start_angle ) {
+        con1.Screen.clearScreen();
+        con1.Screen.setCursor(1, 1);
+        con1.Screen.print("turn left");
+        while ( -Inertial2.orientation(yaw, deg) > endAngle ) {
+          con1.Screen.clearScreen();
+          con1.Screen.setCursor(1, 1);
+          con1.Screen.print("turning left");
+        }
+      } else  {
+        con1.Screen.clearScreen();
+        con1.Screen.setCursor(1, 1);
+        con1.Screen.print("turn right");
+        while ( -Inertial2.orientation(yaw, deg) < endAngle ) {
+          con1.Screen.clearScreen();
+          con1.Screen.setCursor(1, 1);
+          con1.Screen.print(Inertial2.orientation(yaw, deg));
+          con1.Screen.setCursor(1, 2);
+        }
+      }
+      con1.Screen.clearScreen();
+      front_left_motor.stop();
+      back_left_motor.stop();
+      front_right_motor.stop();
+      back_right_motor.stop();
+    }
+
+
   public:
     void static runIntake(double secondsToComplete, bool) {
       intakeLeft.setBrake(coast);
@@ -982,6 +1051,18 @@ class AutonCommands {
       AutonCommands::stopIntake();
       index(2);
     }
+  static void shoot1(double waitTime, int runAt, int shots){
+        // PID flywheelSpeed(0.4, 0, 0.3, 0);
+        // int speed = 0;
+        // int lastSpeed = 0;
+        // lastSpeed = speed;
+        // speed = 0.0028*(VisionSensor.largestObject.width-153.886)*(VisionSensor.largestObject.width-153.886)+28.544;
+        // double percentSpeed = (shooter_left.velocity(velocityUnits::pct) + shooter_right.velocity(velocityUnits::pct))/2;
+        VisionSensor.takeSnapshot(GOAL_RED); 
+  
+        
+        shooter_left.setBrake(coast);
+        shooter_right.setBrake(coast);
 
   public:
     static void shoot1(double waitTime, int runAt, int shots){
@@ -1028,13 +1109,12 @@ void auton1(void) {
   AutonCommands::spinUpFlywheel(11);
   AutonCommands::starting();
   AutonCommands::doRollerfast();
-  
-  AutonCommands::goTo(2.5, 4, 0.3);
-  AutonCommands::turnTo(5, 5);
-  AutonCommands::shoot(2);
-  AutonCommands::shoot(1);
-  AutonCommands::stopShooters();
-  AutonCommands::turnTo(100, 40);
+  AutonCommands::upALittle( 100, .2);
+  AutonCommands::turnToAbsolute(5, 10);
+  AutonCommands::spinUpFlywheel9();
+  AutonCommands::shoot1(2,11,3);
+AutonCommands::turnToAbsolute(120, 30);
+  AutonCommands::turnToAbsolute(135, 10);
   AutonCommands::spinIntake();
   AutonCommands::goTo(-50, 0, 3);
   AutonCommands::spinUpFlywheel(11);
@@ -1043,6 +1123,49 @@ void auton1(void) {
   AutonCommands::shoot(1.4);
   AutonCommands::stopShooters();
   AutonCommands::stopIntake();
+  /*
+
+  ========== Auton Stuff ==========
+
+
+  --- Auton Methods ---
+
+    turnToAbsolute:
+    - First parameter robot orientation from 0 - 359
+    - NOT turning relative to where the robot is at the specific time
+    - turning relative to the field/the robot's start orientation
+
+    turnTo:
+    - turns relative to current robot position
+    - prefered that you used turnToAbsolute
+
+    goTo:
+    - first parameter is how far you want the robot to go forwards/backwards
+    - second parameter is how far you want the robot to go left/right
+    - ignore what the variables are named; if you look at them think of x as forward/back and y as left/right
+
+
+
+  --- FOR ALL AUTON METHODS!!!! ---
+
+    - all of these have overshoot
+    - more important for turning functions
+    - to combat this, drive/turn close to wherever you want to go, and then go to wherever you want to go but a lot slower
+    - e.g. to turn to 90 degrees:
+
+      ```
+      AutonCommands::turnToAbsolute(70, 30);
+      AutonCommands::turnToAbsolute(90, 5);
+      ```
+
+    - or to drive forward 24 inches and left 9  in 4 seconds (although not as important to do this with driving):
+      
+      ```
+      AutonCommands::goTo(20, 7, 3);
+      AutonCommands::goTo(4, 2, 1);
+      ```
+
+  */
 
   
 }
@@ -1084,6 +1207,8 @@ void autonL(void) {
   AutonCommands::spinUpFlywheel(11);
   AutonCommands::shoot1(2,11,3);
    AutonCommands::stopIntake();
+   
+   
   /*
 
   ========== Auton Stuff ==========
@@ -1108,6 +1233,7 @@ void autonL(void) {
 
 
   --- FOR ALL AUTON METHODS!!!! ---
+
 
     - all of these have overshoot
     - more important for turning functions
@@ -1186,6 +1312,14 @@ void autonS(void){
   //  AutonCommands::spinIntake();
   // AutonCommands::goTo(-60,0,3);
 
+
+  //third three
+  AutonCommands::turning(true, .42);
+  AutonCommands::wait(0.25);
+  AutonCommands::intakeThree(1.4);
+  AutonCommands::turning(false, 0.20);
+  AutonCommands::upALittle(100, 0.5);
+  AutonCommands::aimAndShoot();
 
   
 
@@ -1365,7 +1499,8 @@ void driving(void) {
             
             // get middle of targetted object
             int targetMid = VisionSensor.largestObject.originX + (VisionSensor.largestObject.width / 2);
-            // other random crap value is 'feedforward' stfu its messed up
+            
+
             int error = screenCenter - targetMid;
             goal.setValues(0.2, 0.003, 0, targetMid);
             int turning;
@@ -1377,7 +1512,8 @@ void driving(void) {
               goal.resetError();
               turning = goal.getOutput(screenCenter, 0, false, targetMid);
             }
-            
+
+            // other random crap value is 'feedforward' stfu its messed up
             turning += -2;
 
             front_left_motor.setVelocity(-turning, velocityUnits::pct);
@@ -1430,7 +1566,6 @@ void driving(void) {
         if ( goalcol != 2 ) {
           speed = 0.0028*(VisionSensor.largestObject.width-153.886)*(VisionSensor.largestObject.width-153.886)+28.544;
         }
-          
         //variable flywheel speed
         int runAt = 0;
         if ( VisionSensor.largestObject.width > 95 ) {
@@ -1501,7 +1636,7 @@ void driving(void) {
         if ( colorSensor.color() != vex::color::red ) {
           intakeLeft.spin(directionType::rev);
         }
-      
+
       //outake
       } else if ( con2.ButtonX.pressing() ) {
         intakeRight.spin(directionType::rev);
@@ -1511,15 +1646,11 @@ void driving(void) {
       }
 
       
-
-
-      
       
   }
 
  
 }
-
 
 
 
