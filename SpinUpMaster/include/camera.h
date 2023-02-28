@@ -3,16 +3,7 @@
 
 
 vex::vision::signature GOAL_RED = vex::vision::signature (1, 6411, 7849, 7130, -1347, -391, -869, 3.8, 0);
-
-
-
-
-
-
-
 vex::vision::signature GOAL_BLUE = vex::vision::signature (2, -2091, 1, -1045, -1, 6121, 3060, 0.500, 0);
-
-
 vex::vision::signature SIG_3 = vex::vision::signature (3, 0, 0, 0, 0, 0, 0, 2.5, 0);
 vex::vision::signature SIG_4 = vex::vision::signature (4, 0, 0, 0, 0, 0, 0, 2.5, 0);
 vex::vision::signature SIG_5 = vex::vision::signature (5, 0, 0, 0, 0, 0, 0, 2.5, 0);

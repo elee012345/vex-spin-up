@@ -1178,6 +1178,7 @@ void autonR(void) {
  AutonCommands::turnToAbsolute(295, 80);
  AutonCommands::shoot1(1.75,11,3);
   AutonCommands::stopIntake();
+  /*
 
 
 }
@@ -1186,6 +1187,7 @@ void autonR(void) {
 
 
 void autonL(void) {
+  AutonCommands::turnToAbsolute(110, 70);
  AutonCommands::starting();
  AutonCommands::doRollerfast();
 //  AutonCommands::robotGoTo( 100, .2);
