@@ -1083,10 +1083,8 @@ class AutonCommands {
      AutonCommands::robotGoTo(-100, dist);
      AutonCommands::robotGoTo(75, 0.3);
      AutonCommands::spinIntake();
-     AutonCommands::robotGoTo(-7, 6);
+     AutonCommands::robotGoTo(-50, 1);
      AutonCommands::wait(0.5);
-     AutonCommands::stopIntake();
-     index(2);
    }
 
 
@@ -1131,6 +1129,46 @@ class AutonCommands {
  }
 
 
+  public:
+   static void shoot1(double waitTime, double inbetweenTime, int runAt, int shots){
+       // PID flywheelSpeed(0.4, 0, 0.3, 0);
+       // int speed = 0;
+       // int lastSpeed = 0;
+       // lastSpeed = speed;
+       // speed = 0.0028*(VisionSensor.largestObject.width-153.886)*(VisionSensor.largestObject.width-153.886)+28.544;
+       // double percentSpeed = (shooter_left.velocity(velocityUnits::pct) + shooter_right.velocity(velocityUnits::pct))/2;
+       VisionSensor.takeSnapshot(GOAL_RED);
+       
+       shooter_left.setBrake(coast);
+       shooter_right.setBrake(coast);
+
+
+       shooter_left.spin(directionType::fwd, runAt, voltageUnits::volt);
+       shooter_right.spin(directionType::fwd, runAt, voltageUnits::volt);
+      
+       vexTimer.clear();
+       while(vexTimer.time(sec) < waitTime) {
+
+
+       }
+
+
+       for(int i=0; i<shots; i++ ){
+         DigitalOutA.set(true);
+       vexTimer.clear();
+       while(vexTimer.time(sec) < inbetweenTime) {}
+       DigitalOutA.set(false);
+        vexTimer.clear();
+       while(vexTimer.time(sec) < 1) {}
+       }
+
+
+      
+
+
+     
+ }
+
   
 };
 
@@ -1164,21 +1202,22 @@ void auton1(void) {
 void autonR(void) {
  AutonCommands::goTo(0,16,0.7);
  AutonCommands::goTo(-2,0,0.1);
- AutonCommands::spinUpFlywheel(11);
+ AutonCommands::spinUpFlywheel(12);
  AutonCommands::starting();
  AutonCommands::doRollerfast();
  AutonCommands::goTo(2.5,0,0.3);
- AutonCommands::turnToAbsolute(338, 60);
- AutonCommands::shoot1(1.5,12,2);
- AutonCommands::turnToAbsolute( 180, 80);
- AutonCommands::turnToAbsolute(185, 20);
- AutonCommands::spinUpFlywheel(10);
+ AutonCommands::turnToAbsolute(330, 60);
+ AutonCommands::turnToAbsolute(335, 20);
+ AutonCommands::shoot1(1.5,13,2);
+ AutonCommands::turnToAbsolute( 190, 80);
+ AutonCommands::turnToAbsolute(200, 20);
   AutonCommands::spinIntake();
  AutonCommands::goTo(-60,0,1);
+   AutonCommands::spinUpFlywheel(10);
  AutonCommands::turnToAbsolute(295, 80);
  AutonCommands::shoot1(1.75,11,3);
   AutonCommands::stopIntake();
-  /*
+  
 
 
 }
@@ -1187,23 +1226,27 @@ void autonR(void) {
 
 
 void autonL(void) {
-  AutonCommands::turnToAbsolute(110, 70);
- AutonCommands::starting();
- AutonCommands::doRollerfast();
-//  AutonCommands::robotGoTo( 100, .2);
-//  AutonCommands::spinUpFlywheel(12);
-//  AutonCommands::turnToAbsolute(2, 20);
-//  AutonCommands::turnToAbsolute(3, 10);
-//  AutonCommands::shoot1(4,12,2);
-//  AutonCommands::turnToAbsolute(110, 70);
-//  AutonCommands::turnToAbsolute(120, 20);
-//  AutonCommands::spinIntake();
-//  AutonCommands::goTo(-20,0,0.5);
-//  AutonCommands::goTo(-20,0,2);
-//  AutonCommands::turnToAbsolute(14, 80);
-//  AutonCommands::spinUpFlywheel(11);
-//  AutonCommands::shoot1(2,11,3);
-//   AutonCommands::stopIntake();
+  AutonCommands::starting();
+  AutonCommands::doRollerfast();
+  AutonCommands::robotGoTo( 100, .25);
+  AutonCommands::spinUpFlywheel(12);
+  AutonCommands::turnToAbsolute(3, 20);
+  AutonCommands::turnToAbsolute(5, 10);
+  AutonCommands::shoot1(3.5,0.4, 13, 2);
+  AutonCommands::turnToAbsolute(95, 70);
+  AutonCommands::turnToAbsolute(105, 20);
+  AutonCommands::spinIntake();
+  AutonCommands::intakeThree(1.5);
+
+
+  AutonCommands::spinUpFlywheel(10);
+  AutonCommands::turnToAbsolute(2,70);
+  AutonCommands::turnToAbsolute(5, 20);
+  AutonCommands::shoot1(1,11,3);
+  AutonCommands::stopIntake();
+  AutonCommands::stopShooters();
+
+}
  /*
 
 
@@ -1262,8 +1305,7 @@ void autonL(void) {
  */
 
 
- }
-
+ 
 
 
 
@@ -1390,18 +1432,18 @@ void auton(void){
   AutonCommands::turning(true, .365);
   AutonCommands::robotGoTo(75, 0.22);
   AutonCommands::spinUpFlywheel(9);
-  AutonCommands::turnToAbsolute(342, 70);
-  AutonCommands::turnToAbsolute(352, 15);
+  AutonCommands::turnToAbsolute(340, 70);
+  AutonCommands::turnToAbsolute(350, 15);
   AutonCommands::stopIntake();
-  AutonCommands::shoot1(1,10,3);
+  AutonCommands::shoot1(1,0.5, 10,3);
 
 
 
 
   //Shoot second three disks
   AutonCommands::stopShooters();
-  AutonCommands::turnToAbsolute(113, 70);
-  AutonCommands::turnToAbsolute(119, 20);
+  AutonCommands::turnToAbsolute(107, 70);
+  AutonCommands::turnToAbsolute(117, 20);
   AutonCommands::spinIntake();
   AutonCommands::goTo(-65,0,3);
   AutonCommands::spinUpFlywheel(8);
@@ -1593,7 +1635,7 @@ void driving(void) {
 
 
      // expansion
-     if ( con1.ButtonUp.pressing() ){
+     if ( con2.ButtonLeft.pressing() ){
        DigitalOutH.set(true);
      } else {
        DigitalOutH.set(false);
