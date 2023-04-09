@@ -698,13 +698,13 @@ class AutonCommands {
      double secondsToComplete = 0.65;
      intakeLeft.setBrake(coast);
      intakeRight.setBrake(coast);
-     intakeLeft.setReversed(false);
+     intakeRight.setReversed(false);
      //intakeRight.setReversed(true);
-     intakeLeft.setVelocity(100, velocityUnits::pct);
+     intakeRight.setVelocity(100, velocityUnits::pct);
      //intakeRight.setVelocity(100, velocityUnits::pct);
 
 
-     intakeLeft.spin(directionType::fwd);
+     intakeRight.spin(directionType::fwd);
      //intakeRight.spin(directionType::fwd);
 
 
@@ -1027,16 +1027,16 @@ class AutonCommands {
 
  public:
    void static doRollerfast(){
-     double secondsToComplete = 0.3;
+     double secondsToComplete = 0.275;
      intakeLeft.setBrake(coast);
      intakeRight.setBrake(coast);
-     intakeLeft.setReversed(false);
+     intakeRight.setReversed(true);
      //intakeRight.setReversed(true);
-     intakeLeft.setVelocity(100, velocityUnits::pct);
+     intakeRight.setVelocity(100, velocityUnits::pct);
      //intakeRight.setVelocity(100, velocityUnits::pct);
 
 
-     intakeLeft.spin(directionType::fwd);
+     intakeRight.spin(directionType::fwd);
      //intakeRight.spin(directionType::fwd);
 
 
@@ -1084,7 +1084,8 @@ class AutonCommands {
      AutonCommands::robotGoTo(-100, dist);
      AutonCommands::robotGoTo(75, 0.3);
      AutonCommands::spinIntake();
-     AutonCommands::robotGoTo(-50, 1);
+     AutonCommands::wait(0.5);
+     AutonCommands::robotGoTo(-55, 1);
      AutonCommands::wait(0.5);
    }
 
@@ -1097,7 +1098,7 @@ class AutonCommands {
        // lastSpeed = speed;
        // speed = 0.0028*(VisionSensor.largestObject.width-153.886)*(VisionSensor.largestObject.width-153.886)+28.544;
        // double percentSpeed = (shooter_left.velocity(velocityUnits::pct) + shooter_right.velocity(velocityUnits::pct))/2;
-       VisionSensor.takeSnapshot(GOAL_RED);
+      //  VisionSensor.takeSnapshot(GOAL_RED);
        
        shooter_left.setBrake(coast);
        shooter_right.setBrake(coast);
@@ -1229,20 +1230,25 @@ void autonR(void) {
 void autonL(void) {
   AutonCommands::starting();
   AutonCommands::doRollerfast();
-  AutonCommands::robotGoTo( 100, .25);
-  AutonCommands::spinUpFlywheel(12);
-  AutonCommands::turnToAbsolute(3, 20);
-  AutonCommands::turnToAbsolute(5, 10);
-  AutonCommands::shoot1(3.5,0.4, 13, 2);
-  AutonCommands::turnToAbsolute(95, 70);
-  AutonCommands::turnToAbsolute(105, 20);
+  AutonCommands::robotGoTo( 90, .2);
+  AutonCommands::spinUpFlywheel(10);
+  AutonCommands::turnToAbsolute(5, 20);
+  AutonCommands::turnToAbsolute(9, 10);
+  AutonCommands::shoot1(2,0.2, 11, 2);
+  AutonCommands::turnToAbsolute(100, 70);
+  AutonCommands::turnToAbsolute(109, 20);
   AutonCommands::spinIntake();
-  AutonCommands::intakeThree(1.5);
+  //AutonCommands::intakeThree(1.25);
+  AutonCommands::robotGoTo(-100, 1);
+  AutonCommands::robotGoTo(70, 0.2);
+   AutonCommands::robotGoTo(-20, 2.25);
+     
+    
 
 
   AutonCommands::spinUpFlywheel(10);
-  AutonCommands::turnToAbsolute(2,70);
-  AutonCommands::turnToAbsolute(5, 20);
+  AutonCommands::turnToAbsolute(15,70);
+  AutonCommands::turnToAbsolute(24, 20);
   AutonCommands::shoot1(1,11,3);
   AutonCommands::stopIntake();
   AutonCommands::stopShooters();
@@ -1604,7 +1610,7 @@ void driving(void) {
              turning = goal.getOutput(screenCenter, 0, false, targetMid);
            }
           
-           turning += -2;
+           turning += -10;
 
 
            front_left_motor.setVelocity(-turning, velocityUnits::pct);
@@ -1680,15 +1686,15 @@ void driving(void) {
        //variable flywheel speed
        int runAt = 0;
        if ( VisionSensor.largestObject.width > 95 ) {
-         runAt = 12;
+         runAt = 9;
        } else if ( VisionSensor.largestObject.width > 80 ) {
          runAt = 10;
        } else if ( VisionSensor.largestObject.width > 50 ) {
-         runAt = 10;
+         runAt = 9;
        } else if ( VisionSensor.largestObject.width > 35) {
          runAt = 11;
        } else if (VisionSensor.largestObject.width > 7) {
-         runAt = 12;
+         runAt = 11;
        } else {
          runAt = 4;
        }
@@ -1785,7 +1791,7 @@ void driving(void) {
 
 
 int main(){
- Competition.autonomous(autonR);
+ Competition.autonomous(autonL);
  Competition.drivercontrol(driving);
 
 
