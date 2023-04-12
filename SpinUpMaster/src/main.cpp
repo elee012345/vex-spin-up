@@ -47,6 +47,9 @@ vex::timer vexTimer;
 vex::optical colorSensor(vex::PORT11, false);
 vex::timer shootTimer;
 
+int driverGoalTurning = 0;
+bool aiming = false;
+
 
 
 
@@ -71,6 +74,7 @@ class Drives {
      } else {
        xPos = (xPos/10)*(xPos/10);
      }
+     xPos *= -1;
      //Get the raw sums of the X and Y joystick axes
      double front_left  = (double)(yPos + xPos);
      double back_left   = (double)(yPos - xPos);
@@ -95,7 +99,7 @@ class Drives {
 
 
 
-     double turning = con2.Axis1.position(pct);
+     int turning = con2.Axis1.position(pct);
      if ( turning < 0 ) {
        turning = (turning/10)*(turning/10) * -1;
      } else {
@@ -148,9 +152,19 @@ class Drives {
      double rotatedYPos = xPos * sineHeading + yPos * cosHeading;
      double rotatedXPos = xPos * cosHeading - yPos * sineHeading;
 
-
+    if ( con1.ButtonUp.pressing() ) {
+       rotatedYPos = 7.5;
+       con1.Screen.clearScreen();
+     }
      if ( con1.ButtonDown.pressing() ) {
        rotatedYPos = -7.5;
+       con1.Screen.clearScreen();
+     }
+     if ( con1.ButtonLeft.pressing() ) {
+       rotatedXPos = -7.5;
+     }
+     if ( con1.ButtonRight.pressing() ) {
+       rotatedXPos = 7.5;
      }
     
      //Get the raw sums of the X and Y joystick axes
@@ -158,6 +172,7 @@ class Drives {
      double back_left   = (double)(rotatedYPos - rotatedXPos);
      double front_right = (double)(rotatedYPos - rotatedXPos);
      double back_right  = (double)(rotatedYPos + rotatedXPos);
+
 
 
     
@@ -176,21 +191,105 @@ class Drives {
        back_right  = back_right / max_raw_sum * max_XYstick_value;
      }
     
-     double turning = con1.Axis1.position(pct);
-     double magicNumber;
-     if ( abs((int)turning) < 93 ) {
-       magicNumber = 1.025;
+
+    if ( !aiming ) {
+      driverGoalTurning = con1.Axis1.position(pct);
+      double magicNumber;
+      if ( abs((int)driverGoalTurning) < 93 ) {
+        magicNumber = 1.025;
+      } else {
+        magicNumber = 1.048;
+      }
+      if ( driverGoalTurning < 0 ) {
+        driverGoalTurning = pow(magicNumber, -driverGoalTurning)-1;
+        driverGoalTurning *= -1;
+      } else {
+        driverGoalTurning = pow(magicNumber, driverGoalTurning)-1;
+      }
+    }
+    
+
+
+     //Now to consider rotation
+     //Naively add the rotational axis
+     front_left  = front_left  - driverGoalTurning;
+     back_left   = back_left   - driverGoalTurning;
+     front_right = front_right + driverGoalTurning;
+     back_right  = back_right  + driverGoalTurning;
+    
+     //What is the largest sum, or is 100 larger?
+     max_raw_sum = std::max(std::abs(front_left),std::max(std::abs(back_left),std::max(std::abs(front_right),std::max(std::abs(back_right),maxSpeed))));
+    
+     //Scale everything down by the factor that makes the largest only 100, if it was over
+     front_left  = front_left  / max_raw_sum * maxSpeed;
+     back_left   = back_left   / max_raw_sum * maxSpeed;
+     front_right = front_right / max_raw_sum * maxSpeed;
+     back_right  = back_right  / max_raw_sum * maxSpeed;
+    
+     //Write the manipulated values out to the motors
+     front_left_motor.spin(fwd,front_left, voltageUnits::volt);
+     back_left_motor.spin(fwd,back_left,  voltageUnits::volt);
+     front_right_motor.spin(fwd,front_right, voltageUnits::volt);
+     back_right_motor.spin(fwd,back_right, voltageUnits::volt);
+   }
+
+   public:
+   void static fieldOrientedGoal(int turning) {
+     double maxSpeed = 100;
+     double headingRadians = Inertial2.heading() * 3.14159/180;
+     double yPos = con1.Axis3.position(pct);
+     if ( yPos < 0 ) {
+       yPos = (yPos/10)*(yPos/10) * -1;
      } else {
-       magicNumber = 1.048;
+       yPos = (yPos/10)*(yPos/10);
      }
-     if ( turning < 0 ) {
-       turning = pow(magicNumber, -turning)-1;
-       turning *= -1;
+     double xPos = con1.Axis4.position(pct);
+     if ( xPos < 0 ) {
+       xPos = (xPos/10)*(xPos/10) * -1;
      } else {
-       turning = pow(magicNumber, turning)-1;
+       xPos = (xPos/10)*(xPos/10);
+     }
+     double sineHeading = sin(headingRadians);
+     double cosHeading = cos(headingRadians);
+     double rotatedYPos = xPos * sineHeading + yPos * cosHeading;
+     double rotatedXPos = xPos * cosHeading - yPos * sineHeading;
+
+    if ( con1.ButtonUp.pressing() ) {
+       rotatedYPos = 7.5;
+     }
+     if ( con1.ButtonDown.pressing() ) {
+       rotatedYPos = -7.5;
+     }
+     if ( con1.ButtonLeft.pressing() ) {
+       rotatedXPos = -7.5;
+     }
+     if ( con1.ButtonRight.pressing() ) {
+       rotatedXPos = 7.5;
+     }
+    
+     //Get the raw sums of the X and Y joystick axes
+     double front_left  = (double)(rotatedYPos + rotatedXPos);
+     double back_left   = (double)(rotatedYPos - rotatedXPos);
+     double front_right = (double)(rotatedYPos - rotatedXPos);
+     double back_right  = (double)(rotatedYPos + rotatedXPos);
+    
+     //Find the largest possible sum of X and Y
+     double max_raw_sum = (double)(abs((int)(rotatedYPos)) + abs((int)(rotatedXPos)));
+    
+     //Find the largest joystick value
+     double max_XYstick_value = (double)(std::max(abs((int)(rotatedYPos)),abs((int)(rotatedXPos))));
+    
+     //The largest sum will be scaled down to the largest joystick value, and the others will be
+     //scaled by the same amount to preserve directionality
+     if (max_raw_sum != 0) {
+       front_left  = front_left / max_raw_sum * max_XYstick_value;
+       back_left   = back_left / max_raw_sum * max_XYstick_value;
+       front_right = front_right / max_raw_sum * max_XYstick_value;
+       back_right  = back_right / max_raw_sum * max_XYstick_value;
      }
     
 
+    
 
      //Now to consider rotation
      //Naively add the rotational axis
@@ -208,12 +307,12 @@ class Drives {
      front_right = front_right / max_raw_sum * maxSpeed;
      back_right  = back_right  / max_raw_sum * maxSpeed;
     
-     //Write the manipulated values out to the motors
-     front_left_motor.spin(fwd,front_left, voltageUnits::volt);
-     back_left_motor.spin(fwd,back_left,  voltageUnits::volt);
-     front_right_motor.spin(fwd,front_right, voltageUnits::volt);
-     back_right_motor.spin(fwd,back_right, voltageUnits::volt);
+     front_left_motor.spin(fwd,front_left, pct);
+     back_left_motor.spin(fwd,back_left,  pct);
+     front_right_motor.spin(fwd,front_right, pct);
+     back_right_motor.spin(fwd,back_right, pct);
    }
+
 };
 
 
@@ -837,9 +936,20 @@ class AutonCommands {
      intakeRight.setReversed(false);
      intakeLeft.spin(directionType::fwd, 12, voltageUnits::volt);
      intakeRight.spin(directionType::fwd, 12, voltageUnits::volt);
+     intakeLeft.setMaxTorque(100, percentUnits::pct);
+     intakeRight.setMaxTorque(100, percentUnits::pct);
 
 
    }
+  public:
+    void static revIntake() {
+      intakeLeft.setBrake(coast);
+      intakeRight.setBrake(coast);
+      intakeLeft.setReversed(true);
+      intakeRight.setReversed(false);
+      intakeLeft.spin(directionType::fwd, -12, voltageUnits::volt);
+      intakeRight.spin(directionType::fwd, -12, voltageUnits::volt);
+    }
 
 
  public:
@@ -871,7 +981,7 @@ class AutonCommands {
 
  public:
    void static aim(){
-     PID goal(0.6, 1, 1, 0);
+     PID goal(0.2, 0.003, 0, 0);
      int screenCenter = 158;
      vex::timer timerThing;
      timerThing.clear();
@@ -884,7 +994,7 @@ class AutonCommands {
          int targetMid = VisionSensor.largestObject.originX + (VisionSensor.largestObject.width / 2);
          // other random crap value is 'feedforward' stfu its messed up
          int error = screenCenter - targetMid;
-         goal.setValues(0.2, 0.003, 0, targetMid);
+         goal.setValues(0.3, 0.003, 0, targetMid);
          int turning = error * -0.2;
 
 
@@ -1050,7 +1160,7 @@ class AutonCommands {
 
 
      intakeLeft.stop();
-     //intakeRight.stop();
+     intakeRight.stop();
 
 
    }
@@ -1059,7 +1169,7 @@ class AutonCommands {
  public:
    void static spinUpFlywheel(int voltage) {
      shooter_left.spin(directionType::fwd,voltage, voltageUnits::volt);
-       shooter_right.spin(directionType::fwd, voltage, voltageUnits::volt);
+      shooter_right.spin(directionType::fwd, voltage, voltageUnits::volt);
      shooter_left.setBrake(coast);
      shooter_right.setBrake(coast);
    }
@@ -1115,12 +1225,12 @@ class AutonCommands {
 
 
        for(int i=0; i<shots; i++ ){
-         DigitalOutA.set(true);
-       vexTimer.clear();
-       while(vexTimer.time(sec) < 0.45) {}
-       DigitalOutA.set(false);
-        vexTimer.clear();
-       while(vexTimer.time(sec) < 1) {}
+          DigitalOutA.set(true);
+          vexTimer.clear();
+          while(vexTimer.time(sec) < 0.45) {}
+          DigitalOutA.set(false);
+          vexTimer.clear();
+          while(vexTimer.time(sec) < 1) {}
        }
 
 
@@ -1202,22 +1312,23 @@ void auton1(void) {
 
 
 void autonR(void) {
- AutonCommands::goTo(0,16,0.7);
- AutonCommands::goTo(-2,0,0.1);
- AutonCommands::spinUpFlywheel(12);
+ AutonCommands::goTo(0,16,1);
+ AutonCommands::goTo(-1,0,0.1);
+ AutonCommands::spinUpFlywheel(11);
  AutonCommands::starting();
  AutonCommands::doRollerfast();
- AutonCommands::goTo(2.5,0,0.3);
- AutonCommands::turnToAbsolute(330, 60);
- AutonCommands::turnToAbsolute(335, 20);
- AutonCommands::shoot1(1.5,13,2);
- AutonCommands::turnToAbsolute( 190, 80);
- AutonCommands::turnToAbsolute(200, 20);
+ AutonCommands::goTo(4,0,0.3);
+ AutonCommands::turnToAbsolute(310, 80);
+ AutonCommands::turnToAbsolute(350, 20);
+ AutonCommands::shoot1(1,11,2);
+ AutonCommands::goTo(1, -9, 0.7);
+ AutonCommands::turnToAbsolute( 180, 80);
+ AutonCommands::turnToAbsolute(207, 20);
   AutonCommands::spinIntake();
- AutonCommands::goTo(-60,0,1);
+ AutonCommands::goTo(-50,0,1);
    AutonCommands::spinUpFlywheel(10);
  AutonCommands::turnToAbsolute(295, 80);
- AutonCommands::shoot1(1.75,11,3);
+ AutonCommands::shoot1(1.75,10,3);
   AutonCommands::stopIntake();
   
 
@@ -1231,26 +1342,28 @@ void autonL(void) {
   AutonCommands::starting();
   AutonCommands::doRollerfast();
   AutonCommands::robotGoTo( 90, .2);
-  AutonCommands::spinUpFlywheel(10);
+  AutonCommands::spinUpFlywheel(11);
   AutonCommands::turnToAbsolute(5, 20);
   AutonCommands::turnToAbsolute(9, 10);
-  AutonCommands::shoot1(2,0.2, 11, 2);
-  AutonCommands::turnToAbsolute(100, 70);
-  AutonCommands::turnToAbsolute(109, 20);
-  AutonCommands::spinIntake();
-  //AutonCommands::intakeThree(1.25);
-  AutonCommands::robotGoTo(-100, 1);
-  AutonCommands::robotGoTo(70, 0.2);
-   AutonCommands::robotGoTo(-20, 2.25);
-     
-    
+  AutonCommands::shoot1(2,0.4, 11, 2);
+  AutonCommands::turnToAbsolute(110, 70);
+  AutonCommands::turnToAbsolute(130, 10);
+  
 
+  AutonCommands::spinIntake();
+  AutonCommands::robotGoTo(-112, 0.8);
+  for ( int i = 0; i < 6; i++ ) {
+    AutonCommands::spinIntake();
+    AutonCommands::robotGoTo(-12, 0.45);
+  }
+  AutonCommands::spinIntake();
+    
+  AutonCommands::wait(0.3);
 
   AutonCommands::spinUpFlywheel(10);
-  AutonCommands::turnToAbsolute(15,70);
-  AutonCommands::turnToAbsolute(24, 20);
-  AutonCommands::shoot1(1,11,3);
-  AutonCommands::stopIntake();
+  AutonCommands::turnToAbsolute(5,70);
+  AutonCommands::turnToAbsolute(15, 20);
+  AutonCommands::shoot1(1,10,3);
   AutonCommands::stopShooters();
 
 }
@@ -1558,23 +1671,6 @@ void driving(void) {
        }
        Inertial2.setHeading(0.0, degrees);
        Inertial2.setRotation(0.0, degrees);
-     } else if ( con1.ButtonRight.pressing() || con1.ButtonLeft.pressing() || con1.ButtonUp.pressing() ) {
-       // turn to specific angle on second controller for rollers
-       int robotHeading = Inertial2.heading();
-       int turning = 0;
-       if ( con1.ButtonLeft.pressing() ) {
-         if ( (robotHeading - 90) % 360 > (90 - robotHeading) % 360 ) {
-           turning = (90 - robotHeading) % 360;
-         } else {
-           turning = -((robotHeading - 90) % 360);
-         }
-       } else if ( con1.ButtonUp.pressing() ) {
-         if ( (robotHeading - 180) % 360 > (180 - robotHeading) % 360 ) {
-           turning = (180 - robotHeading) % 360;
-         } else {
-           turning = -((robotHeading - 180) % 360);
-         }
-       }
      } else {
 
        // locking onto the goal
@@ -1593,15 +1689,15 @@ void driving(void) {
        }
        if ( goalcol != 0 ) {
          /// aim at goal
-         if ( (con1.ButtonL2.pressing()|| con2.ButtonL2.pressing()) && VisionSensor.largestObject.exists ) {
+         if ( (con1.ButtonL2.pressing() || con2.ButtonL2.pressing()) && VisionSensor.largestObject.exists ) {
           
            // get middle of targetted object
            int targetMid = VisionSensor.largestObject.originX + (VisionSensor.largestObject.width / 2);
            // other random crap value is 'feedforward' stfu its messed up
            int error = screenCenter - targetMid;
-           goal.setValues(0.2, 0.003, 0, targetMid);
-           int turning;
-          
+           goal.setValues(0.17, 0.0, 0, targetMid);
+           
+          int turning;
            // aiming
            if ( error < 20 ) {
              turning = goal.getOutput(screenCenter, 0, true, targetMid);
@@ -1609,27 +1705,19 @@ void driving(void) {
              goal.resetError();
              turning = goal.getOutput(screenCenter, 0, false, targetMid);
            }
-          
-           turning += -10;
+          turning *= 1.5;
+           turning += -5;
+           con1.Screen.clearScreen();
+           con1.Screen.setCursor(1, 1);
+           con1.Screen.print(turning);
+           Drives::fieldOrientedGoal(turning);
 
-
-           front_left_motor.setVelocity(-turning, velocityUnits::pct);
-           front_right_motor.setVelocity(turning, velocityUnits::pct);
-           back_left_motor.setVelocity(-turning, velocityUnits::pct);
-           back_right_motor.setVelocity(turning, velocityUnits::pct);
-           front_left_motor.spin(directionType::fwd);
-           front_right_motor.spin(directionType::fwd);
-           back_left_motor.spin(directionType::fwd);
-           back_right_motor.spin(directionType::fwd);
          }
-      
-
-
        // actually driving the robot around
-       } else if ( con1.Axis1.position() != 0  || con1.Axis2.position() != 0  || con1.Axis3.position() != 0  || con1.Axis4.position() != 0 || con1.ButtonDown.pressing() ) {
-         Drives::fieldOriented();
-       } else {
+       } else if ( con2.Axis1.position() != 0  || con2.Axis2.position() != 0  || con2.Axis3.position() != 0  || con2.Axis4.position() != 0 ) {
          Drives::robotOriented();
+       } else {
+         Drives::fieldOriented();
        }
      }
     
@@ -1690,25 +1778,25 @@ void driving(void) {
        } else if ( VisionSensor.largestObject.width > 80 ) {
          runAt = 10;
        } else if ( VisionSensor.largestObject.width > 50 ) {
-         runAt = 9;
+         runAt = 10;
        } else if ( VisionSensor.largestObject.width > 35) {
-         runAt = 11;
+         runAt = 10;
        } else if (VisionSensor.largestObject.width > 7) {
          runAt = 11;
        } else {
          runAt = 4;
        }
       
-       con1.Screen.clearScreen();
-       con1.Screen.setCursor(1, 1);
-       // what we are actually running at
-       con1.Screen.print(VisionSensor.largestObject.width);
-       con1.Screen.setCursor(2, 1);
-       // what we are telling the motors to run at (PID to correct)
-       con1.Screen.print(runAt);
-       con1.Screen.setCursor(3, 1);
-       // what we want to run at
-       con1.Screen.print(speed);
+       //   con1.Screen.clearScreen();
+       //   con1.Screen.setCursor(1, 1);
+       //   // what we are actually running at
+       //   con1.Screen.print(VisionSensor.largestObject.width);
+       //   con1.Screen.setCursor(2, 1);
+       //   // what we are telling the motors to run at (PID to correct)
+       //   con1.Screen.print(runAt);
+       //   con1.Screen.setCursor(3, 1);
+       //   // what we want to run at
+       //   con1.Screen.print(speed);
        shooter_left.setBrake(coast);
        shooter_right.setBrake(coast);
        if(runAt != 0){
@@ -1725,16 +1813,16 @@ void driving(void) {
        speed = 0.0028*(VisionSensor.largestObject.width-153.886)*(VisionSensor.largestObject.width-153.886)+28.544;
        double percentSpeed = (shooter_left.velocity(velocityUnits::pct) + shooter_right.velocity(velocityUnits::pct))/2;
        int runAt = 0;
-       con1.Screen.clearScreen();
-       con1.Screen.setCursor(1, 1);
-       // what we are actually running at
-       con1.Screen.print(percentSpeed);
-       con1.Screen.setCursor(2, 1);
-       // what we are telling the motors to run at (PID to correct)
-       con1.Screen.print(runAt);
-       con1.Screen.setCursor(3, 1);
-       // what we want to run at
-       con1.Screen.print(speed);
+       //  con1.Screen.clearScreen();
+       //  con1.Screen.setCursor(1, 1);
+       //  // what we are actually running at
+       //  con1.Screen.print(percentSpeed);
+       //  con1.Screen.setCursor(2, 1);
+       //  // what we are telling the motors to run at (PID to correct)
+       //  con1.Screen.print(runAt);
+       //  con1.Screen.setCursor(3, 1);
+       //  // what we want to run at
+       //  con1.Screen.print(speed);
        shooter_left.setVelocity(0, velocityUnits::pct);
        shooter_right.setVelocity(0, velocityUnits::pct);
        shooter_left.spin(directionType::fwd);
@@ -1791,7 +1879,7 @@ void driving(void) {
 
 
 int main(){
- Competition.autonomous(autonL);
+ Competition.autonomous(autonR);
  Competition.drivercontrol(driving);
 
 
