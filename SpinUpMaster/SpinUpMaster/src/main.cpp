@@ -1111,7 +1111,7 @@ class AutonCommands {
  public:
    static void starting(){
      //robotStrafe(100, 0.125);
-     robotGoTo(-100, .25);
+     robotGoTo(-100, .4);
    }
 
 
@@ -1310,7 +1310,6 @@ void auton1(void) {
 
 
 
-
 void autonR(void) {
  AutonCommands::goTo(0,16,1);
  AutonCommands::goTo(-1,0,0.1);
@@ -1319,16 +1318,18 @@ void autonR(void) {
  AutonCommands::doRollerfast();
  AutonCommands::goTo(4,0,0.3);
  AutonCommands::turnToAbsolute(310, 80);
- AutonCommands::turnToAbsolute(350, 20);
- AutonCommands::shoot1(1,11,2);
- AutonCommands::goTo(1, -9, 0.7);
- AutonCommands::turnToAbsolute( 180, 80);
- AutonCommands::turnToAbsolute(207, 20);
-  AutonCommands::spinIntake();
- AutonCommands::goTo(-50,0,1);
-   AutonCommands::spinUpFlywheel(10);
- AutonCommands::turnToAbsolute(295, 80);
- AutonCommands::shoot1(1.75,10,3);
+ AutonCommands::turnToAbsolute(348, 20);
+ AutonCommands::shoot1(1,12,2);
+ AutonCommands::goTo(1, -9, 0.4);
+ AutonCommands::turnToAbsolute( 185, 80);
+ AutonCommands::turnToAbsolute(215, 20);
+AutonCommands::spinIntake();
+ AutonCommands::goTo(-19,0,0.6);
+  AutonCommands::spinUpFlywheel(11);
+  AutonCommands::wait(0.2);
+ AutonCommands::turnToAbsolute(300, 80);
+ AutonCommands::turnToAbsolute(316, 20);
+ AutonCommands::shoot1(1.6,11,1);
   AutonCommands::stopIntake();
   
 
@@ -1478,43 +1479,41 @@ void autonS(void){
 AutonCommands::goTo(4,0,0.175);
 AutonCommands::spinIntake();
 AutonCommands::turnToAbsolute(338,70);
- AutonCommands::turnToAbsolute(341, 20);
+AutonCommands::turnToAbsolute(341, 20);
 AutonCommands::goTo(8,0,0.2);
-
-
- AutonCommands::shoot1(2,10,3);
+AutonCommands::shoot1(2,10,3);
 
 
  //SECOND
- AutonCommands::turnToAbsolute(127, 80);
-  AutonCommands::spinIntake();
- AutonCommands::goTo(-60,0,3);
- AutonCommands::turnToAbsolute(22, 80);
- AutonCommands::turnToAbsolute(27, 20);
- AutonCommands::shoot1(2,9,3);
+AutonCommands::turnToAbsolute(127, 80);
+AutonCommands::spinIntake();
+AutonCommands::goTo(-60,0,3);
+AutonCommands::turnToAbsolute(22, 80);
+AutonCommands::turnToAbsolute(27, 20);
+AutonCommands::shoot1(2,9,3);
 
 
- //THIRD
- AutonCommands::turnToAbsolute(127, 80);
- AutonCommands::spinIntake();
- AutonCommands::goTo(-20,0,0.5);
- AutonCommands::goTo(-20,0,2);
- AutonCommands::turnToAbsolute(50, 80);
- AutonCommands::turnToAbsolute(55, 20);
- AutonCommands::shoot1(2,10,3);
+//THIRD
+AutonCommands::turnToAbsolute(127, 80);
+AutonCommands::spinIntake();
+AutonCommands::goTo(-20,0,0.5);
+AutonCommands::goTo(-20,0,2);
+AutonCommands::turnToAbsolute(50, 80);
+AutonCommands::turnToAbsolute(55, 20);
+AutonCommands::shoot1(2,10,3);
 
 
- //ROLLERS
- // AutonCommands::turnToAbsolute(170, 80);
- // AutonCommands::turnToAbsolute(175, 20);
- // AutonCommands::goTo(-5,0,0.5);
- // AutonCommands::goTo(20,0,0.5);
- // AutonCommands::turnToAbsolute(85, 80);
- // AutonCommands::turnToAbsolute(90, 20);
- // AutonCommands::goTo(-10,0,0.5);
- //  AutonCommands::turnToAbsolute(307, 80);
- //  AutonCommands::spinIntake();
- // AutonCommands::goTo(-60,0,3);
+//ROLLERS
+// AutonCommands::turnToAbsolute(170, 80);
+// AutonCommands::turnToAbsolute(175, 20);
+// AutonCommands::goTo(-5,0,0.5);
+// AutonCommands::goTo(20,0,0.5);
+// AutonCommands::turnToAbsolute(85, 80);
+// AutonCommands::turnToAbsolute(90, 20);
+// AutonCommands::goTo(-10,0,0.5);
+//  AutonCommands::turnToAbsolute(307, 80);
+//  AutonCommands::spinIntake();
+// AutonCommands::goTo(-60,0,3);
 
 
 
@@ -1756,7 +1755,7 @@ void driving(void) {
      if ( con2.ButtonUp.pressing() || con2.ButtonRight.pressing() || con2.ButtonDown.pressing() ) {
        int runAt = 0;
        if ( con2.ButtonUp.pressing() ) {
-         runAt = 11;
+         runAt = 12;
        } else if ( con2.ButtonRight.pressing() ) {
          runAt = 10;
        } else if ( con2.ButtonDown.pressing() ) {
