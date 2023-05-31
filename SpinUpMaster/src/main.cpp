@@ -393,6 +393,9 @@ class AutonCommands {
    }
 
 public:
+    // xToGo and yToGo are both in inches
+    // endOrientation is in degrees
+    // other one is self-explanatory lol
     void static goToAndTurn( double xToGo, double yToGo, double endOrientation, double timeSeconds ) {
     
       
@@ -402,14 +405,16 @@ public:
       double WHEEL_DIAMETER = 4; // inches
       double CIRCUMFERENCE = 3.14159 * WHEEL_DIAMETER; // inches
       double GEAR_RATIO = 1/1;
-      int ROBOT_DIAMETER = 19;
+      int ROBOT_DIAMETER = 19; // diagonal across from wheels (front_right to back_left)
       double ROBOT_CIRCUMFERENCE = ROBOT_DIAMETER * 3.14159;
 
-      // calculate moving with methd parameters
+      // calculate moving with method parameters
+      // how many rotations each motor should turn (at the same time) to translate xToGo and yToGo
       double x_rotations = (xToGo / CIRCUMFERENCE) * GEAR_RATIO;
       double y_rotations = (yToGo / CIRCUMFERENCE) * GEAR_RATIO;
-      double xDegrees = x_rotations * 360 / sqrt(2) * 1.1;
-      double yDegrees = y_rotations * 360  / sqrt(2) * 1.1;
+      // converting rotations to degrees
+      double xDegrees = x_rotations * 360 / sqrt(2);
+      double yDegrees = y_rotations * 360  / sqrt(2);
       
       front_left_motor.resetRotation();
       back_left_motor.resetRotation();
@@ -423,10 +428,18 @@ public:
       // aka wheel rotations per 360 degrees
       double wheelRotationsToRobotRotation = ROBOT_CIRCUMFERENCE / CIRCUMFERENCE;
       double initialOrientation = Inertial2.heading();
+
+      // should probably implement some better way of calculating this like in my newAbsoluteTurnTo method
       double toTurn = endOrientation - initialOrientation;
 
       // number of wheel rotations per whole rotation multiplied by the fraction of a whole rotation the parameter
       // tells the robot to turn
+
+      // ^ i have no idea what i was trying to say there 
+      // takes the number of rotations each wheel needs to turn to one robot rotation 
+      // and then takes the number of rotations we've told the robot to turn
+      // multiplies the two
+      // (fraction of how far the robot should turn * how much it turns in a rotation)
       double wheelRotations = wheelRotationsToRobotRotation * (toTurn/360);
 
 
@@ -440,6 +453,7 @@ public:
       // CALCULATE TRANSLATION
 
       // different direction where the wheels are pointing so different degrees to turn
+      // makes sense if you stare at how the wheels are vectored for a little bit but not too hard to understsand
       double front_left_degrees = xDegrees + yDegrees;
       double front_right_degrees = xDegrees - yDegrees;
       double back_left_degrees = xDegrees - yDegrees;
@@ -472,6 +486,16 @@ public:
       // SOMETIMES THE END ORIENTATION IS NEGATIVE, SOMETIMES IT'S POSITIVE
       // PID??
       
+
+      // yeah and it falls apart here
+      // idk how to combine rotation and translation while still measuring everything at the same time
+      // we can rotate and move at the same time infinitely... 
+      // but how do we measure how far we've translated? how do we measure how far we need to turn each wheel?
+      // we can measure rotation because of the gyro, but idk about translation
+      // i was mostly just guessing here
+      // let me refer you to fieldOrientedAuton (the method above this one)
+      // drive at a specified vector (in arbitrary units) and turns at an arbitrary speed
+      // how do we convert these to measureable units?
       while ( true ) {
         double currentHeading = Inertial2.heading();
         double headingRadians = currentHeading * 3.14159/180;
@@ -771,6 +795,69 @@ public:
   public:
    bool static rangeChecker(double curr, double target, double error){
      return abs((int) curr - (int) target) < error;
+   }
+
+  public:
+    // in inches and degrees
+    void static newGoTo(double xToGo, double yToGo, double speed, double p) {
+      xToGo /= 2;
+      yToGo /= 2;
+    
+      double WHEEL_DIAMETER = 4; // inches
+      double CIRCUMFERENCE = 3.14159 * WHEEL_DIAMETER;
+     
+      double GEAR_RATIO = 1/1;
+      double x_rotations = (xToGo / CIRCUMFERENCE) * GEAR_RATIO;
+      double y_rotations = (yToGo / CIRCUMFERENCE) * GEAR_RATIO;
+      double xDegrees = x_rotations * 360 / sqrt(2);
+      double yDegrees = y_rotations * 360  / sqrt(2);
+    
+      front_left_motor.resetRotation();
+      back_left_motor.resetRotation();
+      front_right_motor.resetRotation();
+      back_right_motor.resetRotation();
+
+
+      // different direction where the wheels are pointing so different degrees to turn
+      double front_left_degrees = xDegrees + yDegrees;
+      double front_right_degrees = xDegrees - yDegrees;
+      double back_left_degrees = xDegrees - yDegrees;
+      double back_right_degrees = xDegrees + yDegrees;
+
+      front_left_motor.setVelocity(speed, pct);
+      back_left_motor.setVelocity(speed, pct);
+      front_right_motor.setVelocity(speed, pct);
+      back_right_motor.setVelocity(speed, pct);
+
+
+      front_left_motor.spin(fwd);
+      back_left_motor.spin(fwd);
+      front_right_motor.spin(fwd);
+      back_right_motor.spin(fwd);
+
+      PID fl(p, 0.1, 0, front_left_degrees);
+      PID fr(p, 0.1, 0, front_right_degrees);
+      PID bl(p, 0.1, 0, back_left_degrees);
+      PID br(p, 0.1, 0, back_right_degrees);
+      while ( front_left_motor.rotation(rotationUnits::deg) != front_left_degrees || front_right_motor.rotation(rotationUnits::deg) != front_right_degrees || back_left_motor.rotation(rotationUnits::deg) != back_left_degrees || back_right_motor.rotation(rotationUnits::deg) != back_right_degrees ) {
+                
+        bool fli = std::abs(front_left_motor.rotation(rotationUnits::deg) - front_left_degrees) < 100;
+        bool fri = std::abs(front_right_motor.rotation(rotationUnits::deg) - front_right_degrees) < 100;
+        bool bli = std::abs(back_left_motor.rotation(rotationUnits::deg) - back_left_degrees) < 100;
+        bool bri = std::abs(back_right_motor.rotation(rotationUnits::deg) - back_right_degrees) < 100;
+        front_left_motor.setVelocity(  fl.getOutput( front_left_motor.rotation(rotationUnits::deg) , 0, fli ), pct);
+        back_left_motor.setVelocity(   bl.getOutput( front_right_motor.rotation(rotationUnits::deg), 0, bli ), pct);
+        front_right_motor.setVelocity( fr.getOutput( back_left_motor.rotation(rotationUnits::deg)  , 0, fri ), pct);
+        back_right_motor.setVelocity(  br.getOutput( back_right_motor.rotation(rotationUnits::deg) , 0, bri ), pct);
+
+
+      }
+
+
+      front_left_motor.stop();
+      back_left_motor.stop();
+      front_right_motor.stop();
+      back_right_motor.stop();
    }
 
 
@@ -1440,19 +1527,65 @@ public:
  }
 
   public:
+    // angleToGo: a degree from 0 to 359
+    // initialSpeed: a scalar, a magnitude, DOES NOT use direction 
+    // p: just the p value duh
     static void newTurnToAbsolute(int angleToGo, int initialSpeed, double p) {     
       
+      // we have compass angles - a range from 0 to 359
+      // the number base is 360
+      // turning from any number to any number that doesn't cross the modulo limit is fine (doesn't go counterclockwise from 0 - 359)
+      // ex: 0 - 270, 40 - 50, 100 - 60, 350 - 0, 70 - 50
+      // 
+      // however, notice that some of these angles are not optimized and that if the robot turned the other way then it would turn faster
+      // we can't deal with normal cases yet, since they might not have optimized turning
+      // first we can focus on passing the modulo boundary
+      // how do we detect it?
+      // we need to initially calculate which way the robot turns by finding the shortest distance to turn to this angle
+      // we'll bias the robot to turn clockwise, but if we turn more than 180 degrees clockwise, we want to turn counterclockwise
+      // so, if (endAngle - currentAngle > 180), then we want to turn counterclockwise
+      // then we just take the number and subtract 360 from it
+      // the logic behind this takes some thought
+      // say we turn from 0 to 270
+      // 270 - 0 >  180, so we do a different calculation
+      // we need to turn -90 degrees, which is (270 - 0) - 360
+      // same for 10 - 350, 350 - 10 > 180
+      // (350 - 10) - 360 = -20
+      // etc.
+      // 
+      // now we have to handle turning the other way: 359 - 0
+      // say we want to turn from 270 to 0
+      // 0 - 270 is -270, which is not greater than 180
+      // so we check the other way around: initialAngle - curentAngle > 180
+      // then we do 360 - (currentAngle - endAngle) for our turning
+      // it works trust
+      // this is basically just the same thing as before you are a smart cookie you can verify this
+      // 
+      // if we don't need to do either of these things (our turning is less than or equal to 180 when we turn clockwise between 0-359)
+      // we just do endAngle - currentAngle
+      // easy enough
+      //
+      // there are different ways to implement this same thing, but this was the first thing I thought of so yeah
+
+
+      // mod angle in case some idiot put in a random crap number
       int end_angle = angleToGo % 360;
       int currentHeading = Inertial2.heading();
       int amountToTurn;
 
       int i = 0;
 
+      // absolute value in case some idiot put in a negative value
       initialSpeed = abs(initialSpeed);
 
+      // if its tuned right you don't overshoot
+      // TUNE IT RIGHT AND DON'T LET IT OVERSHOOT
+      // if you do overshoot it usually doesn't hit the exact angle and turns the other way
       while ( end_angle != currentHeading ) {
         currentHeading = Inertial2.heading();
 
+        // the same math i explained in the big long comment above
+        // you can read that
         if ( end_angle - currentHeading > 180 ) {
           amountToTurn = (end_angle - currentHeading) - 360;
         } else if ( currentHeading - end_angle > 180) {
@@ -1461,12 +1594,16 @@ public:
           amountToTurn = end_angle - currentHeading;
         }
 
+        // if we are super close and not touching we accumulate i to make it turn that extra bit
         if ( abs(amountToTurn) < 3 ) {
-          i += 1.15;
+          i += 1;
         } else {
           i = 0;
         }
 
+        // finally we actually calculate our speed
+        // the choice of dividing by 180 is arbitrary
+        // but it seems to work find and give nice p values so yeah
         double speed = initialSpeed * (amountToTurn/180.0) * (p + i);
 
         con1.Screen.clearScreen();
@@ -1484,6 +1621,10 @@ public:
         back_right_motor.spin(directionType::fwd);
 
       }
+      // now that you're done reading go back to the testing method and read about the turning while moving thing
+
+      // gives the robot extra time just in case but it doesn't seem to improve anything
+      // ONLY BECAUSE IT'S TUNED CORRECTLY
 
       //vex::timer t;
       //t.reset();
@@ -1767,15 +1908,46 @@ void autonExpansionTest(void) {
 }
 
 void testing(void) {
+
+  //AutonCommands::newGoTo(12, 0, 20, 0.01);
+  // ^ i was trying this 
+  // does not work lol
+  // probably badly tuned pid but idk
   //AutonCommands::goToAndTurn(12, 0, 90, 1);
   //Drives::fieldOriented();
 
+  // turn to 45, 270, 45, 90, 180, 0 degrees respectively at an initial speed of 50 and a p of 1.9
+  // tuned decently but could be a little better, your choice if you want to change it
+  // go to the method (control click on it) for more information about it
+  // ((DO IT))
+
   AutonCommands::newTurnToAbsolute(45, 50, 1.9);
   AutonCommands::newTurnToAbsolute(270, 50, 1.9);
-  AutonCommands::newTurnToAbsolute(45, 50, 1.9);
+  // this one sometimes overshoots with a p value of 1.9
+  AutonCommands::newTurnToAbsolute(45, 50, 1.8);
   AutonCommands::newTurnToAbsolute(90, 50, 1.9);
   AutonCommands::newTurnToAbsolute(180, 50, 1.9);
   AutonCommands::newTurnToAbsolute(0, 50, 1.9);
+
+  // a few observations about the robot
+  //
+  // the inertial sensor has drift towards the direction it's turning
+  // so is we turn clockwise a lot, it has drift clockwise and thinks it's turned more clockwise than it is
+  // so during skills we want to try to turn both ways equally
+  // or we need to line up against the wall during the run to verify the robot's orientation/position
+  //
+  // secondly, the robot does not turn in place
+  // it drifts probably from weight distribution and everything not being exact
+  // i have no idea if this happens on the new robot
+  // but just something to note
+
+  
+
+
+  // I also have the goToAndTurn method but it doesn't work too well
+  // as you can see above it's commented out... 
+  // but you can check it out anyway and i'll add lots of comments explaining it
+
 }
 
 void auton(void){
@@ -2139,8 +2311,18 @@ int main(){
   }
   Inertial2.setHeading(0.0, degrees);
   Inertial2.setRotation(0.0, degrees);
+
   Competition.autonomous(autonR);
+  // ALL OF MY TESTING THINGS ARE RUN FROM THIS TESTING METHOD INSIDE OF THE DRIVERCONTROL THIHNGHY
+  // LOOK HERE
+  // DON'T MISS IT
+  //' THIS IS WHERE EVERYTHING GETS RUN
+  // HI ETHAN
+  // THESE ARE UR CONMMENTS
+  // ALL FOR U
+  // <3
   Competition.drivercontrol(testing);
+  //  control click on this ^^^^^^^
 
 
 
@@ -2158,4 +2340,12 @@ int main(){
 }
 
 
-  
+// hi ethan!
+// ethan tran that is
+// because this message is from mr ethan lee
+// start here!
+// go to the line that says:
+//   Competition.drivercontrol(testing);
+// i don't know what line that is because i'm constantly adding/deleting comments and code
+// it has a big long comment next to it though so i'm sure you'll find it
+
