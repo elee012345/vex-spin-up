@@ -394,48 +394,18 @@ class AutonCommands {
 
 public:
     void static goToAndTurn( double xToGo, double yToGo, double endOrientation, double timeSeconds ) {
-      // all measurements in inches unless otherwise specified
+    
+      
+      // SETUP
 
-      int robotDiameter = 19;
-      double robotCircumference = robotDiameter * 3.14159;
-      int wheelDiameter = 4;
-      double wheelCircumference = wheelDiameter * 3.14159;
-      // aka wheel rotations per 360 degrees
-      double wheelRotationsToRobotRotation = robotCircumference / wheelCircumference;
-      double initialOrientation = Inertial2.heading();
-      double toTurn = endOrientation - initialOrientation;
-
-      // number of wheel rotations per whole rotation multiplied by the fraction of a whole rotation the parameter
-      // tells the robot to turn
-      double wheelRotations = wheelRotationsToRobotRotation * (toTurn/360);
-
-      double frontLeftEndOrientation = front_left_motor.rotation(rotationUnits::rev) - wheelRotations;
-      double frontRightEndOrientation = front_right_motor.rotation(rotationUnits::rev) + wheelRotations;
-      double backLeftEndOrientation = back_left_motor.rotation(rotationUnits::rev) - wheelRotations;
-      double backRightEndOrientation = back_right_motor.rotation(rotationUnits::rev) + wheelRotations;
-
-
-
-      // front_left_motor.spinFor(-wheelRotations, rotationUnits::rev, false);
-      // front_right_motor.spinFor(wheelRotations, rotationUnits::rev, false);
-      // back_left_motor.spinFor(-wheelRotations, rotationUnits::rev, false);
-      // back_right_motor.spinFor(wheelRotations, rotationUnits::rev, true);
-
-      double turningPerSecond = wheelRotations / timeSeconds;
-
-
-
-
-      // while ( true ) {
-      //   front_left_motor.spin (directionType::fwd, ( front_left_motor.rotation(rotationUnits::rev)  - frontLeftEndOrientation  ) * 5, velocityUnits::pct);
-      //   front_right_motor.spin(directionType::fwd, ( front_right_motor.rotation(rotationUnits::rev) - frontRightEndOrientation ) * 5, velocityUnits::pct);
-      //   back_left_motor.spin  (directionType::fwd, ( back_left_motor.rotation(rotationUnits::rev)   - backLeftEndOrientation   ) * 5, velocityUnits::pct);
-      //   back_right_motor.spin (directionType::fwd, ( back_right_motor.rotation(rotationUnits::rev)  - backRightEndOrientation  ) * 5, velocityUnits::pct);
-      // }
-
+      // constants
       double WHEEL_DIAMETER = 4; // inches
-      double CIRCUMFERENCE = 3.14159 * WHEEL_DIAMETER;
+      double CIRCUMFERENCE = 3.14159 * WHEEL_DIAMETER; // inches
       double GEAR_RATIO = 1/1;
+      int ROBOT_DIAMETER = 19;
+      double ROBOT_CIRCUMFERENCE = ROBOT_DIAMETER * 3.14159;
+
+      // calculate moving with methd parameters
       double x_rotations = (xToGo / CIRCUMFERENCE) * GEAR_RATIO;
       double y_rotations = (yToGo / CIRCUMFERENCE) * GEAR_RATIO;
       double xDegrees = x_rotations * 360 / sqrt(2) * 1.1;
@@ -445,6 +415,29 @@ public:
       back_left_motor.resetRotation();
       front_right_motor.resetRotation();
       back_right_motor.resetRotation();
+
+
+
+      // CALCULATE ROTATION
+      
+      // aka wheel rotations per 360 degrees
+      double wheelRotationsToRobotRotation = ROBOT_CIRCUMFERENCE / CIRCUMFERENCE;
+      double initialOrientation = Inertial2.heading();
+      double toTurn = endOrientation - initialOrientation;
+
+      // number of wheel rotations per whole rotation multiplied by the fraction of a whole rotation the parameter
+      // tells the robot to turn
+      double wheelRotations = wheelRotationsToRobotRotation * (toTurn/360);
+
+
+      double frontLeftEndOrientation = -wheelRotations * 360;
+      double frontRightEndOrientation = wheelRotations * 360;
+      double backLeftEndOrientation = -wheelRotations  * 360;
+      double backRightEndOrientation = wheelRotations  * 360;
+
+
+
+      // CALCULATE TRANSLATION
 
       // different direction where the wheels are pointing so different degrees to turn
       double front_left_degrees = xDegrees + yDegrees;
@@ -457,6 +450,13 @@ public:
       double back_left_degrees_per_second = back_left_degrees/timeSeconds;
       double back_right_degrees_per_second = back_right_degrees/timeSeconds;
 
+      frontLeftEndOrientation  += front_left_degrees ;
+      frontRightEndOrientation += front_right_degrees;
+      backLeftEndOrientation   += back_left_degrees  ;
+      backRightEndOrientation  += back_right_degrees ;
+
+
+
       vex::timer t;
       t.reset();
       int currentTimeSeconds = 0;
@@ -464,16 +464,27 @@ public:
       con1.Screen.setCursor(1, 1);
       con1.Screen.print("started");
       int count = 0;
-      while (  true ) {
+      // while (  front_left_motor.rotation(rotationUnits::deg) < frontLeftEndOrientation && front_right_motor.rotation(rotationUnits::deg) < frontRightEndOrientation && back_left_motor.rotation(rotationUnits::deg) < backLeftEndOrientation && back_right_motor.rotation(rotationUnits::deg) < backRightEndOrientation ) {
+      
+      // NOTE TO SELF:
+      // FIGURE OUT WHEN EACH WHEEL NEEDS TO STOP MOVING
+      // WHEN THE ROBOT NEEDS TO STOP
+      // SOMETIMES THE END ORIENTATION IS NEGATIVE, SOMETIMES IT'S POSITIVE
+      // PID??
+      
+      while ( true ) {
+        double currentHeading = Inertial2.heading();
+        double headingRadians = currentHeading * 3.14159/180;
         count += 1;
         con1.Screen.clearScreen();
         con1.Screen.setCursor(1, 1);
         con1.Screen.print(count);
+        
         int diff = t.time(timeUnits::sec) - currentTimeSeconds;
         currentTimeSeconds = t.time(timeUnits::sec);
         double orientationToBeAt = initialOrientation + ( currentTimeSeconds / timeSeconds * toTurn );
         // number of degrees the robot needs to turn to be at the orientation at this specific time in the loop
-        double currentToGo = orientationToBeAt - Inertial2.heading();
+        double currentToGo = orientationToBeAt - currentHeading;
         
         // number of wheel rotations to turn to the currentToGo
         double wheelTurning = wheelRotationsToRobotRotation * currentToGo/360.0;
@@ -491,6 +502,29 @@ public:
         }
         
 
+        // calculate strafing instead of driving forward
+        double sineHeading = sin(headingRadians);
+        double cosHeading = cos(headingRadians);
+        double rotatedYPos = xToGo * sineHeading + yToGo * cosHeading;
+        double rotatedXPos = xToGo * cosHeading - yToGo * sineHeading;
+
+
+        x_rotations = (rotatedXPos / CIRCUMFERENCE) * GEAR_RATIO;
+        y_rotations = (rotatedYPos / CIRCUMFERENCE) * GEAR_RATIO;
+        xDegrees = x_rotations * 360 / sqrt(2) * 1.1;
+        yDegrees = y_rotations * 360  / sqrt(2) * 1.1;
+
+        // different direction where the wheels are pointing so different degrees to turn
+        front_left_degrees = xDegrees + yDegrees;
+        front_right_degrees = xDegrees - yDegrees;
+        back_left_degrees = xDegrees - yDegrees;
+        back_right_degrees = xDegrees + yDegrees;
+
+        front_left_degrees_per_second = front_left_degrees/timeSeconds;
+        front_right_degrees_per_second = front_right_degrees/timeSeconds;
+        back_left_degrees_per_second = back_left_degrees/timeSeconds;
+        back_right_degrees_per_second = back_right_degrees/timeSeconds;
+
 
 
         front_left_motor.spin( fwd, front_left_degrees_per_second  + degreesPerSecond, dps);
@@ -502,6 +536,10 @@ public:
       con1.Screen.clearScreen();
       con1.Screen.setCursor(1, 1);
       con1.Screen.print("done");
+      con1.Screen.setCursor(2, 1);
+      con1.Screen.print(count);
+      con1.Screen.setCursor(3, 1);
+      con1.Screen.print(frontLeftEndOrientation);
       front_left_motor.stop();
       back_left_motor.stop();
       front_right_motor.stop();
@@ -1401,6 +1439,88 @@ public:
      
  }
 
+  public:
+    static void newTurnToAbsolute(int angleToGo, int initialSpeed, double p) {     
+      
+      int end_angle = angleToGo % 360;
+      int currentHeading = Inertial2.heading();
+      int amountToTurn;
+
+      int i = 0;
+
+      initialSpeed = abs(initialSpeed);
+
+      while ( end_angle != currentHeading ) {
+        currentHeading = Inertial2.heading();
+
+        if ( end_angle - currentHeading > 180 ) {
+          amountToTurn = (end_angle - currentHeading) - 360;
+        } else if ( currentHeading - end_angle > 180) {
+          amountToTurn = 360 - (currentHeading - end_angle);
+        } else {
+          amountToTurn = end_angle - currentHeading;
+        }
+
+        if ( abs(amountToTurn) < 3 ) {
+          i += 1.15;
+        } else {
+          i = 0;
+        }
+
+        double speed = initialSpeed * (amountToTurn/180.0) * (p + i);
+
+        con1.Screen.clearScreen();
+        con1.Screen.setCursor(1, 1);
+        con1.Screen.print(amountToTurn);
+        con1.Screen.setCursor(2, 1);
+        con1.Screen.print(currentHeading);
+        front_left_motor.setVelocity(-speed, velocityUnits::pct);
+        back_left_motor.setVelocity(-speed, velocityUnits::pct);
+        front_right_motor.setVelocity(speed, velocityUnits::pct);
+        back_right_motor.setVelocity(speed, velocityUnits::pct);
+        front_left_motor.spin(directionType::fwd);
+        back_left_motor.spin(directionType::fwd);
+        front_right_motor.spin(directionType::fwd);
+        back_right_motor.spin(directionType::fwd);
+
+      }
+
+      //vex::timer t;
+      //t.reset();
+      //t.clear();
+      //while ( t.time(sec) < 0.2 ) {
+      //  currentHeading = Inertial2.heading();
+      //
+      //  if ( end_angle - currentHeading > 180 ) {
+      //    amountToTurn = (end_angle - currentHeading) - 360;
+      //  } else {
+      //    amountToTurn = end_angle - currentHeading;
+      //  }
+      //
+      //  int speed = initialSpeed * (amountToTurn/180.0) * p;
+      //  con1.Screen.clearScreen();
+      //  con1.Screen.setCursor(1, 1);
+      //  con1.Screen.print(amountToTurn);
+      //  con1.Screen.setCursor(2, 1);
+      //  con1.Screen.print(currentHeading);
+      //  front_left_motor.setVelocity(-speed, velocityUnits::pct);
+      //  back_left_motor.setVelocity(-speed, velocityUnits::pct);
+      //  front_right_motor.setVelocity(speed, velocityUnits::pct);
+      //  back_right_motor.setVelocity(speed, velocityUnits::pct);
+      //  front_left_motor.spin(directionType::fwd);
+      //  back_left_motor.spin(directionType::fwd);
+      //  front_right_motor.spin(directionType::fwd);
+      //  back_right_motor.spin(directionType::fwd);
+      //
+      //
+      //}
+
+
+
+    }
+
+    
+
   
 };
 
@@ -1647,8 +1767,15 @@ void autonExpansionTest(void) {
 }
 
 void testing(void) {
-  AutonCommands::goToAndTurn(10, 0, 180, 1);
+  //AutonCommands::goToAndTurn(12, 0, 90, 1);
   //Drives::fieldOriented();
+
+  AutonCommands::newTurnToAbsolute(45, 50, 1.9);
+  AutonCommands::newTurnToAbsolute(270, 50, 1.9);
+  AutonCommands::newTurnToAbsolute(45, 50, 1.9);
+  AutonCommands::newTurnToAbsolute(90, 50, 1.9);
+  AutonCommands::newTurnToAbsolute(180, 50, 1.9);
+  AutonCommands::newTurnToAbsolute(0, 50, 1.9);
 }
 
 void auton(void){
@@ -2003,22 +2130,31 @@ void driving(void) {
 
 
 int main(){
- Competition.autonomous(autonR);
- Competition.drivercontrol(testing);
+
+  Inertial2.setHeading(0.0, degrees);
+  Inertial2.setRotation(0.0, degrees);
+  Inertial2.startCalibration();
+  while (Inertial2.isCalibrating()) {
+      task::sleep(10);
+  }
+  Inertial2.setHeading(0.0, degrees);
+  Inertial2.setRotation(0.0, degrees);
+  Competition.autonomous(autonR);
+  Competition.drivercontrol(testing);
 
 
 
 
- // Run the pre-autonomous function.
-
+  // Run the pre-autonomous function.
+  
 
 
 
  // Prevent main from exiting with an infinite loop.
- while (true) {
-   // Run these independently of auton and driver tasks
-   task::sleep(10); // Wait some time between odometry cycles. Test making it shorter for better position estimates
- }
+  while (true) {
+    // Run these independently of auton and driver tasks
+    task::sleep(10); // Wait some time between odometry cycles. Test making it shorter for better position estimates
+  }
 }
 
 
