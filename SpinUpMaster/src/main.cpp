@@ -839,6 +839,44 @@ class AutonCommands {
       front_right_motor.resetRotation();
       back_right_motor.resetRotation();
 
+    
+     //Find the largest possible sum of X and Y
+     double max_raw_sum = (double)(abs(frontback) + abs(sideways));
+    
+     //Find the largest joystick value
+     double max_XYstick_value = (double)(std::max(abs(frontback),abs(sideways)));
+    
+     //The largest sum will be scaled down to the largest joystick value, and the others will be
+     //scaled by the same amount to preserve directionality
+     if (max_raw_sum != 0) {
+       front_left  = front_left / max_raw_sum * max_XYstick_value;
+       back_left   = back_left / max_raw_sum * max_XYstick_value;
+       front_right = front_right / max_raw_sum * max_XYstick_value;
+       back_right  = back_right / max_raw_sum * max_XYstick_value;
+     }
+    
+     //Now to consider rotation
+     //Naively add the rotational axis
+     front_left  = front_left  + turning;
+     back_left   = back_left   + turning;
+     front_right = front_right - turning;
+     back_right  = back_right  - turning;
+    
+     //What is the largest sum, or is 100 larger?
+     max_raw_sum = std::max(std::abs(front_left),std::max(std::abs(back_left),std::max(std::abs(front_right),std::max(std::abs(back_right),maxSpeed))));
+    
+     //Scale everything down by the factor that makes the largest only 100, if it was over
+     front_left  = front_left  / max_raw_sum * maxSpeed;
+     back_left   = back_left   / max_raw_sum * maxSpeed;
+     front_right = front_right / max_raw_sum * maxSpeed;
+     back_right  = back_right  / max_raw_sum * maxSpeed;
+    
+     //Write the manipulated values out to the motors
+     front_left_motor.spin(fwd,front_left, velocityUnits::pct);
+     back_left_motor.spin(fwd,back_left,  velocityUnits::pct);
+     front_right_motor.spin(fwd,front_right,velocityUnits::pct);
+     back_right_motor.spin(fwd,back_right, velocityUnits::pct);
+   }
 
 
 
@@ -891,6 +929,11 @@ class AutonCommands {
       int leftFrontSign = 1;
 
 
+     // different direction where the wheels are pointing so different degrees to turn
+     double front_left_degrees = xDegrees + yDegrees;
+     double front_right_degrees = xDegrees - yDegrees;
+     double back_left_degrees = xDegrees - yDegrees;
+     double back_right_degrees = xDegrees + yDegrees;
 
 
 
@@ -1252,16 +1295,12 @@ class AutonCommands {
     }
 
 
-  public:
-    void static runIntake(double secondsToComplete, bool) {
-      intakeLeft.setBrake(coast);
-      intakeRight.setBrake(coast);
-      intakeLeft.setReversed(true);
-      intakeLeft.setVelocity(100, velocityUnits::pct);
-      intakeRight.setVelocity(100, velocityUnits::pct);
-      intakeLeft.spinFor(secondsToComplete, sec);
-      intakeRight.spinFor(secondsToComplete, sec);
-    }
+     // different direction where the wheels are pointing so different degrees to turn
+     double front_left_degrees = xDegrees + yDegrees;
+     double front_right_degrees = xDegrees - yDegrees;
+     double back_left_degrees = xDegrees - yDegrees;
+     double back_right_degrees = xDegrees + yDegrees;
+     //con1.Screen.print(front_left_degrees);
 
 
   public:
@@ -1343,14 +1382,17 @@ class AutonCommands {
   public:
     void static turning(bool rev,double secondsToComplete){
         
-        int speed = 100;
-        if(rev){
-          speed *= -1;
-        }
-        front_left_motor.setVelocity(-speed, velocityUnits::pct);
-        back_left_motor.setVelocity(-speed, velocityUnits::pct);
-        front_right_motor.setVelocity(speed, velocityUnits::pct);
-        back_right_motor.setVelocity(speed, velocityUnits::pct);
+       }
+     } else  {
+       while ( -Inertial2.rotation(deg) < endAngle ) {
+       }
+     }
+     con1.Screen.clearScreen();
+     front_left_motor.stop();
+     back_left_motor.stop();
+     front_right_motor.stop();
+     back_right_motor.stop();
+   }
 
 
         front_left_motor.spin(directionType::fwd);
@@ -1495,6 +1537,8 @@ class AutonCommands {
       back_left_motor.stop();
       back_right_motor.stop();
       
+       shooter_left.setBrake(coast);
+       shooter_right.setBrake(coast);
 
 
     }
@@ -1520,8 +1564,9 @@ class AutonCommands {
           runAt = 11;
         }
         
-        shooter_left.setBrake(coast);
-        shooter_right.setBrake(coast);
+       }
+     DigitalOutH.set(false);
+   }
 
 
         shooter_left.spin(directionType::fwd, runAt, voltageUnits::volt);
@@ -1534,6 +1579,11 @@ class AutonCommands {
 
         }
 
+ public:
+   static void starting(){
+     //robotStrafe(100, 0.125);
+     robotGoTo(-100, .4);
+   }
 
 
 
@@ -1601,6 +1651,8 @@ class AutonCommands {
       back_left_motor.stop();
       front_right_motor.stop();
 
+     intakeLeft.stop();
+     intakeRight.stop();
 
 
 
@@ -1621,6 +1673,13 @@ class AutonCommands {
       intakeRight.spin(directionType::fwd);
       //intakeRight.spin(directionType::fwd);
 
+ public:
+   void static spinUpFlywheel(int voltage) {
+     shooter_left.spin(directionType::fwd,voltage, voltageUnits::volt);
+      shooter_right.spin(directionType::fwd, voltage, voltageUnits::volt);
+     shooter_left.setBrake(coast);
+     shooter_right.setBrake(coast);
+   }
 
 
 
