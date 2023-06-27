@@ -1,3 +1,22 @@
+// ---- START VEXCODE CONFIGURED DEVICES ----
+// Robot Configuration:
+// [Name]               [Type]        [Port(s)]
+// DigitalOutA          digital_out   A               
+// DigitalOutH          digital_out   H               
+// DigitalOutB          digital_out   B               
+// ---- END VEXCODE CONFIGURED DEVICES ----
+// ---- START VEXCODE CONFIGURED DEVICES ----
+// Robot Configuration:
+// [Name]               [Type]        [Port(s)]
+// DigitalOutA          digital_out   A               
+// DigitalOutH          digital_out   H               
+// ---- END VEXCODE CONFIGURED DEVICES ----
+// ---- START VEXCODE CONFIGURED DEVICES ----
+// Robot Configuration:
+// [Name]               [Type]        [Port(s)]
+// DigitalOutA          digital_out   A               
+// DigitalOutB          digital_out   B               
+// ---- END VEXCODE CONFIGURED DEVICES ----
 /*----------------------------------------------------------------------------*/
 /*                                                                            */
 /*    Module:       main.cpp                                                  */
@@ -28,35 +47,35 @@ using namespace vex;
 
 
 //#region config_globals
-vex::motor      back_right_motor(vex::PORT9, vex::gearSetting::ratio18_1, true);
-vex::motor      back_left_motor(vex::PORT10, vex::gearSetting::ratio18_1, false);
-vex::motor      front_right_motor(vex::PORT1, vex::gearSetting::ratio18_1, true);
-vex::motor      front_left_motor(vex::PORT2, vex::gearSetting::ratio18_1, false);
+vex::motor      back_right_motor(vex::PORT12, vex::gearSetting::ratio18_1, true);
+vex::motor      back_left_motor(vex::PORT20, vex::gearSetting::ratio18_1, false);
+vex::motor      front_right_motor(vex::PORT3, vex::gearSetting::ratio18_1, true);
+vex::motor      front_left_motor(vex::PORT19, vex::gearSetting::ratio18_1, false);
 
 vex::motor      intakeLeft(vex::PORT6, vex::gearSetting::ratio18_1, false);
 vex::motor      intakeRight(vex::PORT5, vex::gearSetting::ratio18_1, false);
 
 vex::controller con1(vex::controllerType::primary);
 vex::controller con2(vex::controllerType::partner);
-vex::inertial   Inertial2(vex::PORT17);
-vex::motor      shooter_left(vex::PORT14, vex::gearSetting::ratio18_1, false);
-vex::motor      shooter_right(vex::PORT15, vex::gearSetting::ratio18_1, true);
+vex::inertial   Inertial2(vex::PORT6);
+vex::motor      shooter_left(vex::PORT11, vex::gearSetting::ratio18_1, false);
+vex::motor      shooter_right(vex::PORT2, vex::gearSetting::ratio18_1, true);
 
 vex::gps        gps(vex::PORT17, 0, turnType::right);
 vex::vision     VisionSensor(vex::PORT10);
 
-vex::motor      intake(vex::PORT16, vex::gearSetting::ratio18_1, false);
+vex::motor      intake(vex::PORT9, vex::gearSetting::ratio18_1, true);
+//need both for intake
 vex::motor      roller(vex::PORT8, vex::gearSetting::ratio18_1, false);
 
-//vex::motor      expansion(vex::PORT20);
 vex::competition Competition;
 vex::timer vexTimer;
 vex::optical colorSensor(vex::PORT11, false);
 vex::timer shootTimer;
 
-vex::rotation left_tracking_wheel(vex::PORT12, true);
-vex::rotation right_tracking_wheel(vex::PORT3, true);
-vex::rotation center_tracking_wheel(vex::PORT13, false);
+vex::rotation left_tracking_wheel(vex::PORT10, true);
+vex::rotation right_tracking_wheel(vex::PORT1, true);
+vex::rotation center_tracking_wheel(vex::PORT5, false);
 
 
 
@@ -165,7 +184,7 @@ class Drives {
      } else {
        xPos = (xPos/10)*(xPos/10);
      }
-     xPos *= -1;
+     //xPos *= -1;
      //Get the raw sums of the X and Y joystick axes
      double front_left  = (double)(yPos + xPos);
      double back_left   = (double)(yPos - xPos);
@@ -212,10 +231,11 @@ class Drives {
      back_right  = back_right  - turning;
     
      //Write the manipulated values out to the motors
-     front_left_motor.spin(fwd,front_left, velocityUnits::pct);
-     back_left_motor.spin(fwd,back_left,  velocityUnits::pct);
+ 
      front_right_motor.spin(fwd,front_right,velocityUnits::pct);
      back_right_motor.spin(fwd,back_right, velocityUnits::pct);
+         front_left_motor.spin(fwd,front_left, velocityUnits::pct);
+     back_left_motor.spin(fwd,back_left,  velocityUnits::pct);
    }
 
 
@@ -405,190 +425,46 @@ class Drives {
 
 
 class AutonCommands {
-
-  public:
-    double static getThetaRadians(){
-      double deltaL = left_tracking_wheel.position(rev) * pi * twDiameter;
-      double deltaR = right_tracking_wheel.position(rev) * pi * twDiameter;
-
-      
-
-      return (deltaL - deltaR)/(tR + tL);
-
-    }
-
-  public:
-    double static getThetaDegrees(){
-      con1.Screen.clearScreen();
-      con1.Screen.setCursor(1, 1);
-      con1.Screen.print(getYPosition());
-      return std::fmod(getThetaRadians() * 180/pi, 360);
-    }
-
-  public:
-    double static getYPosition(){
-      double theta = Inertial2.angle(deg) * pi/(180);
-            double deltaL = left_tracking_wheel.position(rev) * pi * twDiameter;
-
-       return 2 * sin(theta/2) * (deltaL/theta - tL);
-    }
-
-
-  public:
-    void static newRobotStrafe(double x, double y){
-      //Odometry calculations
-      double deltaX = x;
-      double deltaY = y;
-
-
-      double hyp = hypot(deltaX, deltaY);
-
-      double theta = atan(deltaX/deltaY);
-
-      double beta = theta - currHeading*(3.141592/180);
-
-
-      // degrees for the center tracking wheel to move
-      double horizontal = (hyp*sin(beta) / twRadius) * (180/pi) ;
-
-      double vertical = (hyp*cos(beta) / twRadius)  * (180/pi);
-
-      left_tracking_wheel.resetPosition();
-      right_tracking_wheel.resetPosition();
-      center_tracking_wheel.resetPosition();
-
-      
-      // double preVertError = vertical - left_tracking_wheel.position(deg);
-      // double preHoriError = horizontal - center_tracking_wheel.position(deg);
-      // double yIntegral = 0;
-      // double xIntegral = 0;
-
-      front_left_motor.resetRotation();
-      back_left_motor.resetRotation();
-      front_right_motor.resetRotation();
-      back_right_motor.resetRotation();
-
-
-      double vertError = vertical - left_tracking_wheel.position(deg);
-      double horiError = horizontal - center_tracking_wheel.position(deg);
-
-
-
-      //PID loop
-      while(vertError != 0 || horiError != 0){
-        vertError = vertical + left_tracking_wheel.position(deg);
-        horiError = horizontal - center_tracking_wheel.position(deg);
-
-
-        con1.Screen.clearScreen();
-        con1.Screen.setCursor(1, 1);
-        con1.Screen.print(horiError);
-        con1.Screen.setCursor(2, 1);
-        con1.Screen.print(vertError);
-
-        
-        // double xDerivative = horiError - preHoriError;
-        // double yDerivative = vertError - preVertError;
-
-        // if(vertError==0 || vertError > 500){
-        //   yIntegral = 0;
-        // }
-        // if(horiError == 0 || horiError >500){
-        //   xIntegral = 0;
-        // }
-
-
-
-        // double kP = 1;
-        // double kD = 0;
-        // double kI = 0;
-
-        // preVertError = vertError;
-        // preHoriError = horiError;
-
-        // apply pid to thingies
-
-
-
-        
-        Drives::robotOrientedforAuton(horiError/4, vertError/4, 0);
-
-
-
-
-        // different direction where the wheels are pointing so different degrees to turn
-        // double front_left_degrees = horiError + vertError;
-        // double front_right_degrees = horiError - vertError;
-        // double back_left_degrees = horiError - vertError;
-        // double back_right_degrees = horiError + vertError;
-
-
-        // // set turning thingy here
-        // front_left_motor.spin(fwd, front_left_degrees, dps);
-        // back_left_motor.spin(fwd, back_left_degrees, dps);
-        // front_right_motor.spin(fwd, front_right_degrees, dps);
-        // back_right_motor.spin(fwd, back_right_degrees, dps);
-        // con1.Screen.clearScreen();
-        // con1.Screen.setCursor(1, 1);
-        // con1.Screen.print(xDegrees);
-        // con1.Screen.setCursor(1, 10);
-        // con1.Screen.print(front_right_motor.rotation(deg));
-        
-      }
-      front_left_motor.stop();
-      back_left_motor.stop();
-      front_right_motor.stop();
-      back_right_motor.stop();
-      
-      
-
-    }
+  //false for vertical
   
   public:
-    void static resetTW(){
+    void static goTo(double x, double y, double xinitialSpeed, double yinitialSpeed, double cutOff){
+      vexTimer.clear();
       left_tracking_wheel.resetPosition();
-      right_tracking_wheel.resetPosition();
-      center_tracking_wheel.resetPosition();
-    }
-
-  //false for vertical
-  public:
-    void static regularRobotStrafe(double x, double y, double xinitialSpeed, double yinitialSpeed){
-            left_tracking_wheel.resetPosition();
       right_tracking_wheel.resetPosition();
       center_tracking_wheel.resetPosition();
 
       double xsetPoint = x/twRadius * (180/3.141592);
-      double xErr = xsetPoint - left_tracking_wheel.position(deg);
+      double xErr = xsetPoint - center_tracking_wheel.position(deg);
       double xprevError = xErr;
       double xintegral = 0;
 
       double ysetPoint = y/twRadius * (180/3.141592);
-      double yErr = ysetPoint - center_tracking_wheel.position(deg);
+      double yErr = ysetPoint - right_tracking_wheel.position(deg);
       double yprevError = yErr;
       double yintegral = 0;
       
 
-      //ku 0.3
-      //pu 1.25
+
       double dn = 0.01;
-    
-      double xkP = 0.155;
-      double xkD = 0.09;
-      double xkI = 1.1 * dn;
+
+//.161
+      double xkP = 0.16;
+      double xkD = 1.16 * dn;
+      double xkI = 1.16 * dn;
 
 
 
-      double ykP = 0.155;
-      double ykD = 0.09;
-      double ykI = 1.1 * dn;
+      double ykP = 0.16;
+      double ykD = 1.16 * dn;
+      double ykI = 1.16 * dn;
 
       // mod angle in case some idiot put in a random crap number
       int end_angle = Inertial2.heading();
       int amountToTurn;
       double amountToTurnIntegral = 0;
-      double aTTp = 1.5;
-      double aTTi = 0.1 * dn;
+      double aTTp = 2;
+      double aTTi = 0.2*dn;
 
       // if its tuned right you don't overshoot
       // TUNE IT RIGHT AND DON'T LET IT OVERSHOOT
@@ -611,8 +487,12 @@ class AutonCommands {
           amountToTurn = end_angle - currentHeading;
         }
 
-        double yerror = ysetPoint - left_tracking_wheel.position(deg);
-        if(std::abs(yerror) < 200  && yerror != 0){
+        // double yLefterror = ysetPoint - left_tracking_wheel.position(deg);
+        // double yRighterror = ysetPoint - right_tracking_wheel.position(deg);
+        // double yerror = yLefterror > yRighterror ? yLefterror : yRighterror;
+        double yerror = ysetPoint - right_tracking_wheel.position(deg);
+
+        if(std::abs(yerror) < 300  && yerror != 0){
           yintegral = yintegral + yerror;
         } else {
           yintegral = 0;
@@ -621,9 +501,9 @@ class AutonCommands {
         yprevError = yerror;
         double ypower = (yerror*ykP + yderivative * ykD + yintegral*ykI) * yinitialSpeed;
 
-        double xerror = -(xsetPoint - center_tracking_wheel.position(deg));
+        double xerror = (xsetPoint - center_tracking_wheel.position(deg));
 
-        if(std::abs(xerror) < 200 && xerror != 0){
+        if(std::abs(xerror) < 300 && xerror != 0){
         xintegral = xintegral + xerror;
         } else {
           xintegral = 0;
@@ -651,6 +531,9 @@ class AutonCommands {
 
 
         Drives::robotOrientedforAuton(xpower, ypower, amountToTurnPower);
+        if(vexTimer.time(sec) > cutOff){
+          break;
+        }
       }
 
       front_left_motor.stop();
@@ -711,240 +594,31 @@ class AutonCommands {
     }
 
   public:
-      void static pre_auton(void) {
-    //con1.Screen.print("ur bad");
-    DigitalOutA.set(false);
-    DigitalOutH.set(false);
-    Inertial2.setHeading(0.0, degrees);
-    Inertial2.setRotation(0.0, degrees);
-    Inertial2.startCalibration();
-    while (Inertial2.isCalibrating()) {
-        task::sleep(5);
-    }
-    Inertial2.setHeading(0.0, degrees);
-    Inertial2.setRotation(0.0, degrees);
+    void static pre_auton(void) {
+      //con1.Screen.print("ur bad");
+      DigitalOutA.set(true);
+      DigitalOutB.set(false);
+      DigitalOutH.set(false);
+      Inertial2.setHeading(0.0, degrees);
+      Inertial2.setRotation(0.0, degrees);
+      Inertial2.startCalibration();
+      while (Inertial2.isCalibrating()) {
+          task::sleep(5);
+      }
+      Inertial2.setHeading(0.0, degrees);
+      Inertial2.setRotation(0.0, degrees);
   }
 
 
 
-    public:
-      // xToGo and yToGo are both in inches
-      // endOrientation is in degrees
-      // other one is self-explanatory lol
-      void static goToAndTurn( double xToGo, double yToGo, double endOrientation, double timeSeconds ) {
-      
-        
-        // SETUP
-
-        // constants
-        double WHEEL_DIAMETER = 4; // inches
-        double CIRCUMFERENCE = 3.14159 * WHEEL_DIAMETER; // inches
-        double GEAR_RATIO = 1/1;
-        int ROBOT_DIAMETER = 19; // diagonal across from wheels (front_right to back_left)
-        double ROBOT_CIRCUMFERENCE = ROBOT_DIAMETER * 3.14159;
-
-        // calculate moving with method parameters
-        // how many rotations each motor should turn (at the same time) to translate xToGo and yToGo
-        double x_rotations = (xToGo / CIRCUMFERENCE) * GEAR_RATIO;
-        double y_rotations = (yToGo / CIRCUMFERENCE) * GEAR_RATIO;
-        // converting rotations to degrees
-        double xDegrees = x_rotations * 360 / sqrt(2);
-        double yDegrees = y_rotations * 360  / sqrt(2);
-        
-        front_left_motor.resetRotation();
-        back_left_motor.resetRotation();
-        front_right_motor.resetRotation();
-        back_right_motor.resetRotation();
-
-
-
-        // CALCULATE ROTATION
-        
-        // aka wheel rotations per 360 degrees
-        double wheelRotationsToRobotRotation = ROBOT_CIRCUMFERENCE / CIRCUMFERENCE;
-        double initialOrientation = Inertial2.heading();
-
-        // should probably implement some better way of calculating this like in my newAbsoluteTurnTo method
-        double toTurn = endOrientation - initialOrientation;
-
-        // number of wheel rotations per whole rotation multiplied by the fraction of a whole rotation the parameter
-        // tells the robot to turn
-
-        // ^ i have no idea what i was trying to say there 
-        // takes the number of rotations each wheel needs to turn to one robot rotation 
-        // and then takes the number of rotations we've told the robot to turn
-        // multiplies the two
-        // (fraction of how far the robot should turn * how much it turns in a rotation)
-        double wheelRotations = wheelRotationsToRobotRotation * (toTurn/360);
-
-
-        double frontLeftEndOrientation = -wheelRotations * 360;
-        double frontRightEndOrientation = wheelRotations * 360;
-        double backLeftEndOrientation = -wheelRotations  * 360;
-        double backRightEndOrientation = wheelRotations  * 360;
-
-
-
-        // CALCULATE TRANSLATION
-
-        // different direction where the wheels are pointing so different degrees to turn
-        // makes sense if you stare at how the wheels are vectored for a little bit but not too hard to understsand
-        double front_left_degrees = xDegrees + yDegrees;
-        double front_right_degrees = xDegrees - yDegrees;
-        double back_left_degrees = xDegrees - yDegrees;
-        double back_right_degrees = xDegrees + yDegrees;
-
-        double front_left_degrees_per_second = front_left_degrees/timeSeconds;
-        double front_right_degrees_per_second = front_right_degrees/timeSeconds;
-        double back_left_degrees_per_second = back_left_degrees/timeSeconds;
-        double back_right_degrees_per_second = back_right_degrees/timeSeconds;
-
-        frontLeftEndOrientation  += front_left_degrees ;
-        frontRightEndOrientation += front_right_degrees;
-        backLeftEndOrientation   += back_left_degrees  ;
-        backRightEndOrientation  += back_right_degrees ;
-
-
-
-        vex::timer t;
-        t.reset();
-        int currentTimeSeconds = 0;
-        con1.Screen.clearScreen();
-        con1.Screen.setCursor(1, 1);
-        con1.Screen.print("started");
-        int count = 0;
-        // while (  front_left_motor.rotation(rotationUnits::deg) < frontLeftEndOrientation && front_right_motor.rotation(rotationUnits::deg) < frontRightEndOrientation && back_left_motor.rotation(rotationUnits::deg) < backLeftEndOrientation && back_right_motor.rotation(rotationUnits::deg) < backRightEndOrientation ) {
-        
-        // NOTE TO SELF:
-        // FIGURE OUT WHEN EACH WHEEL NEEDS TO STOP MOVING
-        // WHEN THE ROBOT NEEDS TO STOP
-        // SOMETIMES THE END ORIENTATION IS NEGATIVE, SOMETIMES IT'S POSITIVE
-        // PID??
-        
-
-        // yeah and it falls apart here
-        // idk how to combine rotation and translation while still measuring everything at the same time
-        // we can rotate and move at the same time infinitely... 
-        // but how do we measure how far we've translated? how do we measure how far we need to turn each wheel?
-        // we can measure rotation because of the gyro, but idk about translation
-        // i was mostly just guessing here
-        // let me refer you to fieldOrientedAuton (the method above this one)
-        // drive at a specified vector (in arbitrary units) and turns at an arbitrary speed
-        // how do we convert these to measureable units?
-        while ( true ) {
-          double currentHeading = Inertial2.heading();
-          double headingRadians = currentHeading * 3.14159/180;
-          count += 1;
-          con1.Screen.clearScreen();
-          con1.Screen.setCursor(1, 1);
-          con1.Screen.print(count);
-          
-          int diff = t.time(timeUnits::sec) - currentTimeSeconds;
-          currentTimeSeconds = t.time(timeUnits::sec);
-          double orientationToBeAt = initialOrientation + ( currentTimeSeconds / timeSeconds * toTurn );
-          // number of degrees the robot needs to turn to be at the orientation at this specific time in the loop
-          double currentToGo = orientationToBeAt - currentHeading;
-          
-          // number of wheel rotations to turn to the currentToGo
-          double wheelTurning = wheelRotationsToRobotRotation * currentToGo/360.0;
-          // number of wheel degrees to turn to the currentToGo
-          double wheelTurningDegrees = wheelTurning * 360.0;
-
-          // convert wheel rotations to speed
-          // diff is also 'period'
-          // if/else is to avoid division by zero in the first loop
-          double degreesPerSecond;
-          if ( diff != 0 ) {
-            degreesPerSecond = wheelTurningDegrees / diff;
-          } else {
-            degreesPerSecond = 0;
-          }
-          
-
-          // calculate strafing instead of driving forward
-          double sineHeading = sin(headingRadians);
-          double cosHeading = cos(headingRadians);
-          double rotatedYPos = xToGo * sineHeading + yToGo * cosHeading;
-          double rotatedXPos = xToGo * cosHeading - yToGo * sineHeading;
-
-
-          x_rotations = (rotatedXPos / CIRCUMFERENCE) * GEAR_RATIO;
-          y_rotations = (rotatedYPos / CIRCUMFERENCE) * GEAR_RATIO;
-          xDegrees = x_rotations * 360 / sqrt(2) * 1.1;
-          yDegrees = y_rotations * 360  / sqrt(2) * 1.1;
-
-          // different direction where the wheels are pointing so different degrees to turn
-          front_left_degrees = xDegrees + yDegrees;
-          front_right_degrees = xDegrees - yDegrees;
-          back_left_degrees = xDegrees - yDegrees;
-          back_right_degrees = xDegrees + yDegrees;
-
-          front_left_degrees_per_second = front_left_degrees/timeSeconds;
-          front_right_degrees_per_second = front_right_degrees/timeSeconds;
-          back_left_degrees_per_second = back_left_degrees/timeSeconds;
-          back_right_degrees_per_second = back_right_degrees/timeSeconds;
-
-
-
-          front_left_motor.spin( fwd, front_left_degrees_per_second  + degreesPerSecond, dps);
-          back_left_motor.spin(  fwd, back_left_degrees_per_second   + degreesPerSecond, dps);
-          front_right_motor.spin(fwd, front_right_degrees_per_second - degreesPerSecond, dps);
-          back_right_motor.spin( fwd, back_right_degrees_per_second  - degreesPerSecond, dps);
-        }
-
-        con1.Screen.clearScreen();
-        con1.Screen.setCursor(1, 1);
-        con1.Screen.print("done");
-        con1.Screen.setCursor(2, 1);
-        con1.Screen.print(count);
-        con1.Screen.setCursor(3, 1);
-        con1.Screen.print(frontLeftEndOrientation);
-        front_left_motor.stop();
-        back_left_motor.stop();
-        front_right_motor.stop();
-        back_right_motor.stop();
-
-
-
-        
-    }
-
+    
 
   
 
-    public:
+  public:
     bool static rangeChecker(double curr, double target, double error){
       return std::abs(curr - target) < error;
     }
-
-   
-
- 
-
-  public:
-    static void stopShooters(){
-        shooter_left.setVelocity(0, velocityUnits::pct);
-        shooter_right.setVelocity(0, velocityUnits::pct);
-        shooter_left.spin(directionType::fwd);
-        shooter_right.spin(directionType::fwd);
-    }
-    
-
-
-  public:
-    static void expand(){
-      DigitalOutH.set(true);
-
-
-      vexTimer.clear();
-        while(vexTimer.time(sec) < 5) {
-          
-        }
-      DigitalOutH.set(false);
-    }
-
-
-
 
 
   public:
@@ -973,7 +647,8 @@ class AutonCommands {
     // angleToGo: a degree from 0 to 359
     // initialSpeed: a scalar, a magnitude, DOES NOT use direction 
     // p: just the p value duh
-    static void newTurnToAbsolute(int angleToGo, int initialSpeed, double p) {     
+    void static turnToAbsolute(int angleToGo) {     
+
       
       // we have compass angles - a range from 0 to 359
       // the number base is 360
@@ -1015,16 +690,31 @@ class AutonCommands {
       int end_angle = angleToGo % 360;
       int currentHeading = Inertial2.heading();
       int amountToTurn;
+              if ( end_angle - currentHeading > 180 ) {
+          amountToTurn = (end_angle - currentHeading) - 360;
+        } else if ( currentHeading - end_angle > 180) {
+          amountToTurn = 360 - (currentHeading - end_angle);
+        } else {
+          amountToTurn = end_angle - currentHeading;
+        }
+      int prevError = amountToTurn;
 
-      int i = 0;
 
       // absolute value in case some idiot put in a negative value
-      initialSpeed = abs(initialSpeed);
+      double initialSpeed = 100;     
+
+
+      double dn = 0.01;
+
+      double amountToTurnIntegral = 0;
+      double aTTp = 0.5 * dn;
+      double aTTd = 0;
+      double aTTi = 0;
 
       // if its tuned right you don't overshoot
       // TUNE IT RIGHT AND DON'T LET IT OVERSHOOT
       // if you do overshoot it usually doesn't hit the exact angle and turns the other way
-      while ( end_angle != currentHeading ) {
+      while (std::abs(amountToTurn) > 2) {
         currentHeading = Inertial2.heading();
 
         // the same math i explained in the big long comment above
@@ -1037,92 +727,93 @@ class AutonCommands {
           amountToTurn = end_angle - currentHeading;
         }
 
-        // if we are super close and not touching we accumulate i to make it turn that extra bit
-        if ( abs(amountToTurn) < 3 ) {
-          i += 1;
+
+        if(std::abs(amountToTurn) < 5 && amountToTurn != 0){
+        amountToTurnIntegral  += amountToTurn;
         } else {
-          i = 0;
+          amountToTurnIntegral = 0;
         }
+        double derivative = amountToTurn - prevError;
+        prevError = amountToTurn;
+
+
+        double speed = (amountToTurn*aTTp + derivative * aTTd + amountToTurnIntegral*aTTi) * initialSpeed;
+
+        // if we are super close and not touching we accumulate i to make it turn that extra bit
+        // if ( abs(amountToTurn) < 3 ) {
+        //   i += 0.1;
+        // } else {
+        //   i = 0;
+        // }
 
         // finally we actually calculate our speed
         // the choice of dividing by 180 is arbitrary
         // but it seems to work find and give nice p values so yeah
-        double speed = initialSpeed * (amountToTurn/180.0) * (p + i);
+        
 
         con1.Screen.clearScreen();
         con1.Screen.setCursor(1, 1);
         con1.Screen.print(amountToTurn);
         con1.Screen.setCursor(2, 1);
-        con1.Screen.print(currentHeading);
-        front_left_motor.setVelocity(-speed, velocityUnits::pct);
-        back_left_motor.setVelocity(-speed, velocityUnits::pct);
-        front_right_motor.setVelocity(speed, velocityUnits::pct);
-        back_right_motor.setVelocity(speed, velocityUnits::pct);
+        con1.Screen.print(end_angle);
+        front_left_motor.setVelocity(speed, velocityUnits::pct);
+        back_left_motor.setVelocity(speed, velocityUnits::pct);
+        front_right_motor.setVelocity(-speed, velocityUnits::pct);
+        back_right_motor.setVelocity(-speed, velocityUnits::pct);
         front_left_motor.spin(directionType::fwd);
         back_left_motor.spin(directionType::fwd);
         front_right_motor.spin(directionType::fwd);
         back_right_motor.spin(directionType::fwd);
 
       }
-      // now that you're done reading go back to the testing method and read about the turning while moving thing
 
-      // gives the robot extra time just in case but it doesn't seem to improve anything
-      // ONLY BECAUSE IT'S TUNED CORRECTLY
+      front_left_motor.stop();
+      back_left_motor.stop();
+      front_right_motor.stop();
+      back_right_motor.stop();
 
-      //vex::timer t;
-      //t.reset();
-      //t.clear();
-      //while ( t.time(sec) < 0.2 ) {
-      //  currentHeading = Inertial2.heading();
-      //
-      //  if ( end_angle - currentHeading > 180 ) {
-      //    amountToTurn = (end_angle - currentHeading) - 360;
-      //  } else {
-      //    amountToTurn = end_angle - currentHeading;
-      //  }
-      //
-      //  int speed = initialSpeed * (amountToTurn/180.0) * p;
-      //  con1.Screen.clearScreen();
-      //  con1.Screen.setCursor(1, 1);
-      //  con1.Screen.print(amountToTurn);
-      //  con1.Screen.setCursor(2, 1);
-      //  con1.Screen.print(currentHeading);
-      //  front_left_motor.setVelocity(-speed, velocityUnits::pct);
-      //  back_left_motor.setVelocity(-speed, velocityUnits::pct);
-      //  front_right_motor.setVelocity(speed, velocityUnits::pct);
-      //  back_right_motor.setVelocity(speed, velocityUnits::pct);
-      //  front_left_motor.spin(directionType::fwd);
-      //  back_left_motor.spin(directionType::fwd);
-      //  front_right_motor.spin(directionType::fwd);
-      //  back_right_motor.spin(directionType::fwd);
-      //
-      //
-      //}
+      
+      con1.Screen.clearScreen();
+      con1.Screen.setCursor(1, 1);
+      con1.Screen.print("done");
 
 
 
     }
 
+   public:
+   static void wait(double secs){
+    vexTimer.clear();
+       while(vexTimer.time(sec) < secs) {
+        
+       }
+   }
+
+
   public:
-    void static rolllerOn(){
-      roller.setVelocity(75, pct);
-      roller.spin(directionType::fwd);
+    void static rollerOn(){
+      roller.setBrake(coast);
+      roller.setVelocity(100, velocityUnits::pct);
+      roller.spin(directionType::rev);
     }
 
   public:
-   void static rollerOff(){
-     roller.stop();
-  }
+    void static rollerOff(){
+      roller.stop();
+    }
 
   public:
     void static intakeOn(){
+      roller.setVelocity(100, velocityUnits::pct);
       intake.setVelocity(100, velocityUnits::pct);
       intake.spin(directionType::fwd);
+      roller.spin(directionType::fwd);
     }
 
   public:
     void static intakeOff(){
       intake.stop();
+      roller.stop();
     }
 
   public:
@@ -1131,26 +822,224 @@ class AutonCommands {
       intake.spin(directionType::rev);
     }
 
-
-
+   public:
+    static void stopShooters(){
+        shooter_left.setVelocity(0, velocityUnits::pct);
+        shooter_right.setVelocity(0, velocityUnits::pct);
+        shooter_left.spin(directionType::fwd);
+        shooter_right.spin(directionType::fwd);
+    }
     
 
+
+  public:
+    static void expand(){
+      DigitalOutH.set(true);
+
+
+      vexTimer.clear();
+        while(vexTimer.time(sec) < 5) {
+          
+        }
+      DigitalOutH.set(false);
+    }
+
+  public:
+    static void spinUpFlywheel(int velocity){
+        shooter_left.setVelocity(velocity, velocityUnits::pct);
+        shooter_right.setVelocity(velocity, velocityUnits::pct);
+        shooter_left.spin(directionType::fwd);
+        shooter_right.spin(directionType::fwd);
+    }
+
+  public:
+    void static liftIntake(void){
+      DigitalOutB.set(true);
+    }
+
+  public:
+    void static dropIntake(void){
+      DigitalOutB.set(false);
+    }
+
+
+  
+  //Modular stuff for skills
+  public:
+    void static doRoller(void){
+      double secondsToComplete = 0.65;
+
+      rollerOn();
+      wait(secondsToComplete);
+      rollerOff();
+    }
+
+    public:
+      static void shoot(double waitTime, double inbetweenTime, int runAt, int shots){
+       
+       shooter_left.setBrake(coast);
+       shooter_right.setBrake(coast);
+
+       shooter_left.spin(directionType::fwd, runAt, voltageUnits::volt);
+       shooter_right.spin(directionType::fwd, runAt, voltageUnits::volt);
+      
+       vexTimer.clear();
+       while(vexTimer.time(sec) < waitTime) {
+
+
+       }
+
+
+       for(int i=0; i<shots; i++ ){
+         DigitalOutA.set(false);
+       vexTimer.clear();
+       while(vexTimer.time(sec) < inbetweenTime) {}
+       DigitalOutA.set(true);
+        vexTimer.clear();
+       while(vexTimer.time(sec) < 1) {}
+       }
+
+       stopShooters();
+
+   }
+
+   public:
+    void static intakeThreeStack(void){
+      liftIntake();
+      intakeOn();
+      goTo(0, 1, 0.25, 0.25, 1.25);
+      dropIntake();
+      wait(3);
+      intakeOff();
+    }
+
+
+  
+
+  public:
+    void static starting(double speed, double waitTime){
+      front_left_motor.setVelocity(speed, velocityUnits::pct);
+      back_left_motor.setVelocity(speed, velocityUnits::pct);
+      front_right_motor.setVelocity(speed, velocityUnits::pct);
+      back_right_motor.setVelocity(speed, velocityUnits::pct);
+      front_left_motor.spin(directionType::fwd);
+      front_right_motor.spin(directionType::fwd);
+      back_left_motor.spin(directionType::fwd);
+      back_right_motor.spin(directionType::fwd);
+      wait(waitTime);
+      front_left_motor.stop();
+      front_right_motor.stop();
+      back_left_motor.stop();
+      back_right_motor.stop();
+    }
   
 };
 
 //autons start here
 
 void skillsAuton(void){
+  DigitalOutA.set(true);
+  //AutonCommands::pre_auton();
   //First Roller
+  AutonCommands::rollerOn();
+  AutonCommands::starting(-50, 0.45);
+  AutonCommands::wait(0.4);
+  AutonCommands::rollerOff();
+  AutonCommands::starting(75, 0.4);
+  //AutonCommands::doRoller();
+
+  // //Second Roller
+  AutonCommands::turnToAbsolute(120);
+  AutonCommands::spinUpFlywheel(50);
+  AutonCommands::intakeOn();
+  AutonCommands::goTo(0, -12.5, 1, 1, 1.25);
+  AutonCommands::turnToAbsolute(90);
+  AutonCommands::goTo(0, -11.5, 1, 0.95, 1.25);
+  AutonCommands::intakeOff();
+  AutonCommands::rollerOn();
+  AutonCommands::wait(0.5);
+  AutonCommands::starting(-50, 0.4);
+  AutonCommands::wait(0.5);
+  AutonCommands::rollerOff();
+  AutonCommands::starting(75, 0.5);
+  AutonCommands::intakeOn();
   
+
+  // //shoot preloads
+  AutonCommands::goTo(-26, 13, 1, 1, 1.25);
+  AutonCommands::turnToAbsolute(351);
+  AutonCommands::shoot(0.2, 1, 13, 3);
+  AutonCommands::intakeOff();
+
+  // //shoot second three
+  AutonCommands::turnToAbsolute(230);
+  AutonCommands::intakeOn();
+  AutonCommands::spinUpFlywheel(50);
+  AutonCommands::goTo(0, -60, 1, 0.3, 7);
+  // AutonCommands::intakeOff();
+  // AutonCommands::turnToAbsolute(315);
+  // AutonCommands::shoot(0.2, .7, 12, 3);
+
+  // //shoot third three
+  // AutonCommands::turnToAbsolute(240);
+  // AutonCommands::intakeThreeStack();
+  // AutonCommands::spinUpFlywheel(100);
+  // AutonCommands::turnToAbsolute(300);
+  // AutonCommands::shoot(0.2, .7, 12, 3);
+
+  // //third roller
+  // AutonCommands::turnToAbsolute(240);
+  // AutonCommands::goTo(0, -25, 1, 1);
+  // AutonCommands::turnToAbsolute(0);
+  //  AutonCommands::rollerOn();
+  // AutonCommands::starting();
+  // AutonCommands::rollerOff();
+  //   AutonCommands::goTo(0, 4, 1, 1.5);
+
+
+  
+
+//old stuff
+
+
+  // //Shoot preloads
+  // AutonCommands::goTo(11.5, 11.5, 1.3, 1.3);
+  // AutonCommands::turnToAbsolute(335);
+  // AutonCommands::shoot(0.2, 0.7, 14, 2);
+
+  // //First Three stack
+  // AutonCommands::turnToAbsolute(230);
+  // AutonCommands::goTo(0, 3, 1, 1);
+  // AutonCommands::intakeThreeStack();
+  // AutonCommands::spinUpFlywheel(75);
+  // AutonCommands::turnToAbsolute(115);
+  // AutonCommands::shoot(0.5, 0.5, 12, 3);
+  
+  // //First triple
+  // AutonCommands::turnToAbsolute(250);
+  // AutonCommands::intakeOn();
+  // // AutonCommands::goTo();
+  // // AutonCommands::spinUpFlywheel(50);
+  // // AutonCommands::intakeOff();
+  // // AutonCommands::turnnToAbsolute();
+  // AutonCommands::shoot(0.5, 0.5, 11, 3);
+
+  // //Second Roller
+  // AutonCommands::turnToAbsolute(0);
+  
+  
+  
+
+
 
 }
 
 
 
 void strafeTesting(void){
-  //AutonCommands::newRobotStrafe(0, 10);
-  AutonCommands::regularRobotStrafe(-24, -12, 1, 1);
+  AutonCommands::pre_auton();
+  AutonCommands::turnToAbsolute(330);
+  AutonCommands::turnToAbsolute(45);
 }
 
 
@@ -1169,53 +1058,6 @@ void strafeTesting(void){
 
 
 
-
-
-void autonExpansionTest(void) {
-}
-
-void testing(void) {
-
-  //AutonCommands::newGoTo(12, 0, 20, 0.01);
-  // ^ i was trying this 
-  // does not work lol
-  // probably badly tuned pid but idk
-  //AutonCommands::goToAndTurn(12, 0, 90, 1);
-  //Drives::fieldOriented();
-
-  // turn to 45, 270, 45, 90, 180, 0 degrees respectively at an initial speed of 50 and a p of 1.9
-  // tuned decently but could be a little better, your choice if you want to change it
-  // go to the method (control click on it) for more information about it
-  // ((DO IT))
-
-  // AutonCommands::newTurnToAbsolute(45, 50, 1.9);
-  // AutonCommands::newTurnToAbsolute(270, 50, 1.9);
-  // this one sometimes overshoots with a p value of 1.9
-  // AutonCommands::newTurnToAbsolute(45, 50, 1.8);
-  // AutonCommands::newTurnToAbsolute(90, 50, 1.9);
-  // AutonCommands::newTurnToAbsolute(180, 50, 1.9);
-  // AutonCommands::newTurnToAbsolute(0, 50, 1.9);
-
-  // a few observations about the robot
-  //
-  // the inertial sensor has drift towards the direction it's turning
-  // so is we turn clockwise a lot, it has drift clockwise and thinks it's turned more clockwise than it is
-  // so during skills we want to try to turn both ways equally
-  // or we need to line up against the wall during the run to verify the robot's orientation/position
-  //
-  // secondly, the robot does not turn in place
-  // it drifts probably from weight distribution and everything not being exact
-  // i have no idea if this happens on the new robot
-  // but just something to note
-
-  
-
-
-  // I also have the goToAndTurn method but it doesn't work too well
-  // as you can see above it's commented out... 
-  // but you can check it out anyway and i'll add lots of comments explaining it
-
-}
 
 
 
@@ -1229,8 +1071,8 @@ void driverAuton() {
 
 
 void driving(void) { 
-  roller.setVelocity(75, pct);
-
+  roller.setVelocity(75, velocityUnits::pct);
+    bool isExpanded = false;
 
 
    //driverAuton();
@@ -1254,10 +1096,11 @@ void driving(void) {
    int speed = 0;
    int lastSpeed = 0;
    int goalcol = 0;
+   DigitalOutA.set(true);
    while(true) {
     
     
-    AutonCommands::getThetaDegrees();
+
 
      // resetting gyro if anything bad happens
      // intake is considered front, so have to reset while intake is facing away from driver/facing the front
@@ -1319,15 +1162,15 @@ void driving(void) {
      }
     
      //shoot
-     if ( con1.ButtonA.pressing() || con2.ButtonA.pressing()) {
-        DigitalOutA.set(true);
+     if ( con1.ButtonR1.pressing() || con2.ButtonR1.pressing()) {
+        DigitalOutA.set(false);
         shootTimer.clear();
         shootTimer.reset();
         double start = shootTimer.time(msec);
-        while ( shootTimer.time(msec) - start < 500 ) {
-          DigitalOutA.set(true);
+        while ( shootTimer.time(msec) - start < 1000 ) {
+          DigitalOutA.set(false);
         }
-        DigitalOutA.set(false);
+        DigitalOutA.set(true);
 
         shootTimer.clear();
         shootTimer.reset();
@@ -1338,12 +1181,12 @@ void driving(void) {
         }
 
      } else {
-       DigitalOutA.set(false);
+       DigitalOutA.set(true);
      }
 
 
      // expansion
-     if ( con2.ButtonLeft.pressing() || con1.ButtonLeft.pressing() ){
+     if ( con2.ButtonA.pressing()){
        DigitalOutH.set(true);
      } else {
        DigitalOutH.set(false);
@@ -1427,32 +1270,31 @@ void driving(void) {
      }
 
 
-     //intake forward
+     //intake forward(
      if ( con1.ButtonL1.pressing() || con2.ButtonL1.pressing() ) {
-          intake.setVelocity(100, velocityUnits::pct);
-       intake.spin(directionType::fwd);
+        intake.setVelocity(100, velocityUnits::pct);
+        roller.setVelocity(100, velocityUnits::pct);
+        intake.spin(directionType::fwd);
+        roller.spin(directionType::fwd);
 
      }
       //intake reverse
-     else if ( con1.ButtonR1.pressing() || con2.ButtonR1.pressing() ) {
-          intake.setVelocity(70, velocityUnits::pct);
-
+     else if ( con1.ButtonX.pressing()) {
+        intake.setVelocity(70, velocityUnits::pct);
        intake.spin(directionType::rev);
-     } else {
-       intake.stop();
 
-     }
-
-     //rollers
-     if ( con1.ButtonX.pressing() || con2.ButtonX.pressing()) {
-       roller.spin(directionType::fwd);
+     } else  if ( con2.ButtonX.pressing()) {
+       roller.spin(directionType::rev);
 
       //roller reverse
      } else if(con2.ButtonB.pressing()){
        roller.spin(directionType::rev);
      }  else {
+       intake.stop();
        roller.stop();
      }
+
+
 
      //roller to color
      if ( con1.ButtonB.pressing() ) {
@@ -1461,6 +1303,17 @@ void driving(void) {
        }
      }
      //outake
+
+    
+
+     if(con1.ButtonA.pressing()){
+       
+       isExpanded = !isExpanded;
+      DigitalOutB.set(isExpanded);
+      AutonCommands::wait(0.1);
+     }
+
+    
 
 
 
@@ -1499,7 +1352,7 @@ int main(){
   Inertial2.setHeading(0.0, degrees);
   Inertial2.setRotation(0.0, degrees);
 
-  Competition.autonomous(strafeTesting);
+  Competition.autonomous(skillsAuton);
   // ALL OF MY TESTING THINGS ARE RUN FROM THIS TESTING METHOD INSIDE OF THE DRIVERCONTROL THIHNGHY
   // LOOK HERE
   // DON'T MISS IT
