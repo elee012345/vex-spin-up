@@ -6,6 +6,7 @@ extern brain Brain;
 extern digital_out DigitalOutA;
 extern digital_out DigitalOutH;
 extern digital_out DigitalOutB;
+extern optical Optical13;
 
 /**
  * Used to initialize code/tasks/devices added using tools in VEXcode Pro.

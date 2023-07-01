@@ -11,6 +11,7 @@ brain  Brain;
 digital_out DigitalOutA = digital_out(Brain.ThreeWirePort.A);
 digital_out DigitalOutH = digital_out(Brain.ThreeWirePort.H);
 digital_out DigitalOutB = digital_out(Brain.ThreeWirePort.B);
+optical Optical13 = optical(PORT13);
 
 // VEXcode generated functions
 

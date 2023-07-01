@@ -4,6 +4,22 @@
 // DigitalOutA          digital_out   A               
 // DigitalOutH          digital_out   H               
 // DigitalOutB          digital_out   B               
+// Optical13            optical       13              
+// ---- END VEXCODE CONFIGURED DEVICES ----
+// ---- START VEXCODE CONFIGURED DEVICES ----
+// Robot Configuration:
+// [Name]               [Type]        [Port(s)]
+// DigitalOutA          digital_out   A               
+// DigitalOutH          digital_out   H               
+// DigitalOutB          digital_out   B               
+// Optical13            optical       13              
+// ---- END VEXCODE CONFIGURED DEVICES ----
+// ---- START VEXCODE CONFIGURED DEVICES ----
+// Robot Configuration:
+// [Name]               [Type]        [Port(s)]
+// DigitalOutA          digital_out   A               
+// DigitalOutH          digital_out   H               
+// DigitalOutB          digital_out   B               
 // ---- END VEXCODE CONFIGURED DEVICES ----
 // ---- START VEXCODE CONFIGURED DEVICES ----
 // Robot Configuration:
@@ -67,11 +83,14 @@ vex::vision     VisionSensor(vex::PORT10);
 vex::motor      intake(vex::PORT9, vex::gearSetting::ratio18_1, true);
 //need both for intake
 vex::motor      roller(vex::PORT8, vex::gearSetting::ratio18_1, false);
+vex::distance   locator(vex::PORT14);
 
 vex::competition Competition;
 vex::timer vexTimer;
 vex::optical colorSensor(vex::PORT11, false);
 vex::timer shootTimer;
+vex::color  rollerColor(blue);
+
 
 vex::rotation left_tracking_wheel(vex::PORT10, true);
 vex::rotation right_tracking_wheel(vex::PORT1, true);
@@ -530,7 +549,7 @@ class AutonCommands {
         con1.Screen.print(yerror);
 
 
-        Drives::robotOrientedforAuton(xpower, ypower, amountToTurnPower);
+        Drives::robotOrientedforAuton(xpower, ypower, amountToTurnPower*2);
         if(vexTimer.time(sec) > cutOff){
           break;
         }
@@ -714,7 +733,7 @@ class AutonCommands {
       // if its tuned right you don't overshoot
       // TUNE IT RIGHT AND DON'T LET IT OVERSHOOT
       // if you do overshoot it usually doesn't hit the exact angle and turns the other way
-      while (std::abs(amountToTurn) > 2) {
+      while (std::abs(amountToTurn) > 1) {
         currentHeading = Inertial2.heading();
 
         // the same math i explained in the big long comment above
@@ -862,16 +881,63 @@ class AutonCommands {
       DigitalOutB.set(false);
     }
 
+  public:
+    void static goToRoller(void){
+      int speed = -100;
+      Optical13.setLightPower(100, percent);
+      Optical13.setLight(ledState::on);
+      front_left_motor.setVelocity(speed, velocityUnits::pct);
+      back_left_motor.setVelocity(speed, velocityUnits::pct);
+      front_right_motor.setVelocity(speed, velocityUnits::pct);
+      back_right_motor.setVelocity(speed, velocityUnits::pct);
+      while(locator.objectDistance(distanceUnits::mm) > 92){
+        front_left_motor.spin(directionType::fwd);
+       front_right_motor.spin(directionType::fwd);
+       back_left_motor.spin(directionType::fwd);
+        back_right_motor.spin(directionType::fwd);
+      }
+      front_left_motor.stop();
+      front_right_motor.stop();
+      back_left_motor.stop();
+      back_right_motor.stop();
+      
+    }
+  
+  public:
+    void static getOffRoller(void){
+      int speed = 75;
+      Optical13.setLightPower(100, percent);
+      Optical13.setLight(ledState::on);
+      front_left_motor.setVelocity(speed, velocityUnits::pct);
+      back_left_motor.setVelocity(speed, velocityUnits::pct);
+      front_right_motor.setVelocity(speed, velocityUnits::pct);
+      back_right_motor.setVelocity(speed, velocityUnits::pct);
+      while(locator.objectDistance(distanceUnits::mm) < 200){
+        front_left_motor.spin(directionType::fwd);
+       front_right_motor.spin(directionType::fwd);
+       back_left_motor.spin(directionType::fwd);
+        back_right_motor.spin(directionType::fwd);
+      }
+      front_left_motor.stop();
+      front_right_motor.stop();
+      back_left_motor.stop();
+      back_right_motor.stop();     
+    }
+
+
 
   
   //Modular stuff for skills
   public:
     void static doRoller(void){
       double secondsToComplete = 0.65;
+      Optical13.setLightPower(100, percent);
+      Optical13.setLight(ledState::on);
+      double rollerHue = 250;
 
-      rollerOn();
-      wait(secondsToComplete);
-      rollerOff();
+      if(Optical13.color() == rollerColor){
+         rollerOff();
+      }
     }
 
     public:
@@ -905,10 +971,8 @@ class AutonCommands {
 
    public:
     void static intakeThreeStack(void){
-      liftIntake();
       intakeOn();
-      goTo(0, 1, 0.25, 0.25, 1.25);
-      dropIntake();
+      goTo(0, 10, 0.25, 0.25, 4);
       wait(3);
       intakeOff();
     }
@@ -918,6 +982,8 @@ class AutonCommands {
 
   public:
     void static starting(double speed, double waitTime){
+      Optical13.setLightPower(100, percent);
+      Optical13.setLight(ledState::on);
       front_left_motor.setVelocity(speed, velocityUnits::pct);
       back_left_motor.setVelocity(speed, velocityUnits::pct);
       front_right_motor.setVelocity(speed, velocityUnits::pct);
@@ -938,63 +1004,112 @@ class AutonCommands {
 //autons start here
 
 void skillsAuton(void){
+  //RESET INERTIAL SENSOR
   DigitalOutA.set(true);
-  //AutonCommands::pre_auton();
+  AutonCommands::pre_auton();
   //First Roller
   AutonCommands::rollerOn();
-  AutonCommands::starting(-50, 0.45);
-  AutonCommands::wait(0.4);
-  AutonCommands::rollerOff();
-  AutonCommands::starting(75, 0.4);
+  AutonCommands::goToRoller();
+  AutonCommands::doRoller();
+  // AutonCommands::wait(0.4);
+  // AutonCommands::rollerOff();
+  AutonCommands::starting(75, 0.35);
+  AutonCommands::getOffRoller();
   //AutonCommands::doRoller();
 
   // //Second Roller
   AutonCommands::turnToAbsolute(120);
-  AutonCommands::spinUpFlywheel(50);
+  AutonCommands::spinUpFlywheel(90);
   AutonCommands::intakeOn();
-  AutonCommands::goTo(0, -12.5, 1, 1, 1.25);
+  AutonCommands::goTo(0, -13.5, 1, 1, 1.5);
   AutonCommands::turnToAbsolute(90);
-  AutonCommands::goTo(0, -11.5, 1, 0.95, 1.25);
+  AutonCommands::goTo(0, -14.5, 1, 0.85, 1.65);
   AutonCommands::intakeOff();
   AutonCommands::rollerOn();
-  AutonCommands::wait(0.5);
-  AutonCommands::starting(-50, 0.4);
-  AutonCommands::wait(0.5);
-  AutonCommands::rollerOff();
+  AutonCommands::turnToAbsolute(90);
+  AutonCommands::goToRoller();
+  AutonCommands::doRoller();
+  // AutonCommands::wait(0.4);
+  // AutonCommands::rollerOff();
   AutonCommands::starting(75, 0.5);
   AutonCommands::intakeOn();
   
 
   // //shoot preloads
-  AutonCommands::goTo(-26, 13, 1, 1, 1.25);
-  AutonCommands::turnToAbsolute(351);
-  AutonCommands::shoot(0.2, 1, 13, 3);
+  AutonCommands::goTo(-40, 16, 1, 1, 1.25);
+  AutonCommands::turnToAbsolute(353);
+  AutonCommands::shoot(0.5, 1.2, 13, 4);
   AutonCommands::intakeOff();
 
-  // //shoot second three
-  AutonCommands::turnToAbsolute(230);
+
+  //last resort
+  // AutonCommands::turnToAbsolute(0);
+  // AutonCommands::goTo(13, -30, 1, 1, 1.25);
+  // AutonCommands::turnToAbsolute(45);
+  // AutonCommands::expand();
+
+  //only if there is a practice field
+  //shoot second three
+  AutonCommands::goTo(0, -2, 1, 1, 2);
+  AutonCommands::turnToAbsolute(225);
   AutonCommands::intakeOn();
   AutonCommands::spinUpFlywheel(50);
-  AutonCommands::goTo(0, -60, 1, 0.3, 7);
-  // AutonCommands::intakeOff();
-  // AutonCommands::turnToAbsolute(315);
-  // AutonCommands::shoot(0.2, .7, 12, 3);
+  AutonCommands::goTo(0, -87, 1, 0.2, 3.5);
+  AutonCommands::turnToAbsolute(300);
+  AutonCommands::shoot(1, .7, 12, 4);
+  AutonCommands::intakeOff();
+
+
+
+
+  // new pathing
+  AutonCommands::turnToAbsolute(180);
+  AutonCommands::goTo(0, -30, 1, 1, 3);
+  AutonCommands::goTo(-37, 0, 1, 1, 4);
+  AutonCommands::rollerOn();
+  AutonCommands::turnToAbsolute(180);
+  AutonCommands::goToRoller();
+  AutonCommands::doRoller();
+  AutonCommands::getOffRoller();
+
+  //fourth roller
+  AutonCommands::intakeOn();
+  AutonCommands::turnToAbsolute(330);
+  AutonCommands::goTo(0, -13.5, 1, 1, 1.5);
+  AutonCommands::turnToAbsolute(90);
+  AutonCommands::goTo(0, -14.5, 1, 0.85, 1.65);
+  AutonCommands::intakeOff();
+  AutonCommands::rollerOn();
+  AutonCommands::turnToAbsolute(270);
+  AutonCommands::goToRoller();
+  AutonCommands::doRoller();
+
+  AutonCommands::getOffRoller();
+  AutonCommands::goTo(10, 10, 1, 1, 2);
+  AutonCommands::turnToAbsolute(225);
+  AutonCommands::expand();
+
+
+
+
+
+  //useless
 
   // //shoot third three
-  // AutonCommands::turnToAbsolute(240);
+  // AutonCommands::turnToAbsolute(225);
   // AutonCommands::intakeThreeStack();
   // AutonCommands::spinUpFlywheel(100);
   // AutonCommands::turnToAbsolute(300);
   // AutonCommands::shoot(0.2, .7, 12, 3);
 
   // //third roller
-  // AutonCommands::turnToAbsolute(240);
-  // AutonCommands::goTo(0, -25, 1, 1);
-  // AutonCommands::turnToAbsolute(0);
-  //  AutonCommands::rollerOn();
-  // AutonCommands::starting();
+  // AutonCommands::turnToAbsolute(225);
+  // AutonCommands::goTo(0, -25, 1, 1, 1.25);
+  // AutonCommands::turnToAbsolute(180);
+  // AutonCommands::rollerOn();
+  // AutonCommands::starting(100, 2);
   // AutonCommands::rollerOff();
-  //   AutonCommands::goTo(0, 4, 1, 1.5);
+  // AutonCommands::goTo(0, 4, 1, 1.5, 1);
 
 
   
@@ -1154,9 +1269,11 @@ void driving(void) {
 
          }
        // actually driving the robot around
-       } else if ( con2.Axis1.position() != 0  || con2.Axis2.position() != 0  || con2.Axis3.position() != 0  || con2.Axis4.position() != 0 ) {
-         Drives::robotOriented();
-       } else {
+       }
+        // else if ( con2.Axis1.position() != 0  || con2.Axis2.position() != 0  || con2.Axis3.position() != 0  || con2.Axis4.position() != 0 ) {
+        //  Drives::robotOriented();
+       //}
+        else {
          Drives::fieldOriented();
        }
      }
@@ -1196,11 +1313,13 @@ void driving(void) {
      if ( con2.ButtonUp.pressing() || con2.ButtonRight.pressing() || con2.ButtonDown.pressing() ) {
        int runAt = 0;
        if ( con2.ButtonUp.pressing() ) {
-         runAt = 12;
+         runAt = 13;
        } else if ( con2.ButtonRight.pressing() ) {
-         runAt = 10;
-       } else if ( con2.ButtonDown.pressing() ) {
-         runAt = 7;
+         runAt = 12;
+       }
+       
+        else if ( con2.ButtonDown.pressing() ) {
+         runAt = 11;
        }
        shooter_left.spin(directionType::fwd, runAt, voltageUnits::volt);
        shooter_right.spin(directionType::fwd, runAt, voltageUnits::volt);
@@ -1251,8 +1370,6 @@ void driving(void) {
      } else {
        lastSpeed = speed;
        speed = 0.0028*(VisionSensor.largestObject.width-153.886)*(VisionSensor.largestObject.width-153.886)+28.544;
-       double percentSpeed = (shooter_left.velocity(velocityUnits::pct) + shooter_right.velocity(velocityUnits::pct))/2;
-       int runAt = 0;
        //  con1.Screen.clearScreen();
        //  con1.Screen.setCursor(1, 1);
        //  // what we are actually running at
@@ -1388,4 +1505,3 @@ int main(){
 //   Competition.drivercontrol(testing);
 // i don't know what line that is because i'm constantly adding/deleting comments and code
 // it has a big long comment next to it though so i'm sure you'll find it
-
